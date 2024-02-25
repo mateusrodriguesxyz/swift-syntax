@@ -162,6 +162,9 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
+      if elements.count > 0, currentToken.tokenText == "else" {
+        break
+      }
       let condition = self.parseConditionElement(lastBindingKind: elements.last?.condition.as(RawOptionalBindingConditionSyntax.self)?.bindingSpecifier)
       var unexpectedBeforeKeepGoing: RawUnexpectedNodesSyntax? = nil
       keepGoing = self.consume(if: .comma)
@@ -180,6 +183,44 @@ extension Parser {
     } while keepGoing != nil && self.hasProgressed(&loopProgress)
 
     return RawConditionElementListSyntax(elements: elements, arena: self.arena)
+  }
+  
+  /// Parse a list of condition elements returning optional trailing comma block.
+  mutating func parseConditionListWithTrailingCommaBlock() -> (conditions: RawConditionElementListSyntax, blockAfterTrailingComma: RawClosureExprSyntax?) {
+    // We have a simple comma separated list of clauses, but also need to handle
+    // a variety of common errors situations (including migrating from Swift 2
+    // syntax).
+    var blockAfterTrailingComma: RawClosureExprSyntax?
+    var elements = [RawConditionElementSyntax]()
+    var keepGoing: RawTokenSyntax? = nil
+    var loopProgress = LoopProgressCondition()
+    repeat {
+      let condition = self.parseConditionElement(lastBindingKind: elements.last?.condition.as(RawOptionalBindingConditionSyntax.self)?.bindingSpecifier)
+      var unexpectedBeforeKeepGoing: RawUnexpectedNodesSyntax? = nil
+      if let block = condition.as(RawClosureExprSyntax.self), block.signature == nil {
+        blockAfterTrailingComma = block
+        keepGoing = nil
+        break
+      } else {
+        keepGoing = self.consume(if: .comma)
+      }
+      if keepGoing == nil, let token = self.consumeIfContextualPunctuator("&&") ?? self.consume(if: .keyword(.where)) {
+        unexpectedBeforeKeepGoing = RawUnexpectedNodesSyntax(combining: unexpectedBeforeKeepGoing, token, arena: self.arena)
+        keepGoing = missingToken(.comma)
+      }
+      elements.append(
+        RawConditionElementSyntax(
+          condition: condition,
+          unexpectedBeforeKeepGoing,
+          trailingComma: keepGoing,
+          arena: self.arena
+        )
+      )
+    } while keepGoing != nil && self.hasProgressed(&loopProgress)
+    
+    let conditions = RawConditionElementListSyntax(elements: elements, arena: self.arena)
+
+    return (conditions, blockAfterTrailingComma)
   }
 
   /// Parse a condition element.
@@ -484,8 +525,8 @@ extension Parser {
   /// Parse a while statement.
   mutating func parseWhileStatement(whileHandle: RecoveryConsumptionHandle) -> RawWhileStmtSyntax {
     let (unexpectedBeforeWhileKeyword, whileKeyword) = self.eat(whileHandle)
-    let conditions: RawConditionElementListSyntax
-
+    var conditions: RawConditionElementListSyntax
+    var blockAfterTrailingComma: RawClosureExprSyntax?
     if self.at(.leftBrace) {
       conditions = RawConditionElementListSyntax(
         elements: [
@@ -498,9 +539,25 @@ extension Parser {
         arena: self.arena
       )
     } else {
-      conditions = self.parseConditionList()
+      (conditions, blockAfterTrailingComma) = self.parseConditionListWithTrailingCommaBlock()
     }
-    let body = self.parseCodeBlock(introducer: whileKeyword)
+    
+    let body: RawCodeBlockSyntax
+    
+    if let blockAfterTrailingComma {
+      body = .init(
+        blockAfterTrailingComma.unexpectedBeforeLeftBrace,
+        leftBrace: blockAfterTrailingComma.leftBrace,
+        statements: blockAfterTrailingComma.statements,
+        blockAfterTrailingComma.unexpectedBetweenStatementsAndRightBrace,
+        rightBrace: blockAfterTrailingComma.rightBrace,
+        blockAfterTrailingComma.unexpectedAfterRightBrace,
+        arena: self.arena
+      )
+    } else {
+        body = self.parseCodeBlock(introducer: whileKeyword)
+    }
+    
     return RawWhileStmtSyntax(
       unexpectedBeforeWhileKeyword,
       whileKeyword: whileKeyword,

@@ -1853,7 +1853,7 @@ extension Parser {
   ///
   /// This is currently the same as parsing a tuple expression. In the future,
   /// this will be a dedicated argument list type.
-  mutating func parseArgumentListElements(pattern: PatternContext, flavor: ExprFlavor = .basic) -> [RawLabeledExprSyntax] {
+  mutating func parseArgumentListElements(pattern: PatternContext, flavor: ExprFlavor = .basic, allowTrailingComma: Bool = true) -> [RawLabeledExprSyntax] {
     if let remainingTokens = remainingTokensIfMaximumNestingLevelReached() {
       return [
         RawLabeledExprSyntax(
@@ -1875,6 +1875,9 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
+      if allowTrailingComma, currentToken.rawTokenKind == .rightParen {
+        break
+      }
       let unexpectedBeforeLabel: RawUnexpectedNodesSyntax?
       let label: RawTokenSyntax?
       let colon: RawTokenSyntax?
@@ -2089,29 +2092,45 @@ extension Parser {
 
 extension Parser {
   /// Parse an if statement/expression.
-  mutating func parseIfExpression(
-    ifHandle: RecoveryConsumptionHandle
-  ) -> RawIfExprSyntax {
-    let (unexpectedBeforeIfKeyword, ifKeyword) = self.eat(ifHandle)
+mutating func parseIfExpression(
+  ifHandle: RecoveryConsumptionHandle
+) -> RawIfExprSyntax {
+  let (unexpectedBeforeIfKeyword, ifKeyword) = self.eat(ifHandle)
 
-    let conditions: RawConditionElementListSyntax
+  var conditions: RawConditionElementListSyntax
+  
+  var blockAfterTrailingComma: RawClosureExprSyntax?
 
-    if self.at(.leftBrace) {
-      conditions = RawConditionElementListSyntax(
-        elements: [
-          RawConditionElementSyntax(
-            condition: .expression(RawExprSyntax(RawMissingExprSyntax(arena: self.arena))),
-            trailingComma: nil,
-            arena: self.arena
-          )
-        ],
-        arena: self.arena
-      )
-    } else {
-      conditions = self.parseConditionList()
-    }
-
-    let body = self.parseCodeBlock(introducer: ifKeyword)
+  if self.at(.leftBrace) {
+    conditions = RawConditionElementListSyntax(
+      elements: [
+        RawConditionElementSyntax(
+          condition: .expression(RawExprSyntax(RawMissingExprSyntax(arena: self.arena))),
+          trailingComma: nil,
+          arena: self.arena
+        )
+      ],
+      arena: self.arena
+    )
+  } else {
+    (conditions, blockAfterTrailingComma) = self.parseConditionListWithTrailingCommaBlock()
+  }
+  
+  let body: RawCodeBlockSyntax
+  
+  if let blockAfterTrailingComma {
+    body = .init(
+      blockAfterTrailingComma.unexpectedBeforeLeftBrace,
+      leftBrace: blockAfterTrailingComma.leftBrace,
+      statements: blockAfterTrailingComma.statements,
+      blockAfterTrailingComma.unexpectedBetweenStatementsAndRightBrace,
+      rightBrace: blockAfterTrailingComma.rightBrace,
+      blockAfterTrailingComma.unexpectedAfterRightBrace,
+      arena: self.arena
+    )
+  } else {
+      body = self.parseCodeBlock(introducer: ifKeyword)
+  }
 
     // The else branch, if any, is outside of the scope of the condition.
     let elseKeyword = self.consume(if: .keyword(.else))
