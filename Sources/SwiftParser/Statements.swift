@@ -162,8 +162,10 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
-      if elements.count > 0, currentToken.tokenText == "else" {
-        break
+      if experimentalFeatures.contains(.trailingComma) {
+        if elements.count > 0, currentToken.tokenText == "else" {
+          break
+        }
       }
       let condition = self.parseConditionElement(lastBindingKind: elements.last?.condition.as(RawOptionalBindingConditionSyntax.self)?.bindingSpecifier)
       var unexpectedBeforeKeepGoing: RawUnexpectedNodesSyntax? = nil
@@ -186,7 +188,7 @@ extension Parser {
   }
   
   /// Parse a list of condition elements returning optional trailing comma block.
-  mutating func parseConditionListWithTrailingCommaBlock() -> (conditions: RawConditionElementListSyntax, blockAfterTrailingComma: RawClosureExprSyntax?) {
+  mutating func _parseConditionListWithTrailingCommaBlock() -> (conditions: RawConditionElementListSyntax, blockAfterTrailingComma: RawClosureExprSyntax?) {
     // We have a simple comma separated list of clauses, but also need to handle
     // a variety of common errors situations (including migrating from Swift 2
     // syntax).
@@ -526,7 +528,6 @@ extension Parser {
   mutating func parseWhileStatement(whileHandle: RecoveryConsumptionHandle) -> RawWhileStmtSyntax {
     let (unexpectedBeforeWhileKeyword, whileKeyword) = self.eat(whileHandle)
     var conditions: RawConditionElementListSyntax
-    var blockAfterTrailingComma: RawClosureExprSyntax?
     if self.at(.leftBrace) {
       conditions = RawConditionElementListSyntax(
         elements: [
@@ -539,23 +540,22 @@ extension Parser {
         arena: self.arena
       )
     } else {
-      (conditions, blockAfterTrailingComma) = self.parseConditionListWithTrailingCommaBlock()
+      conditions = self.parseConditionList()
     }
     
-    let body: RawCodeBlockSyntax
-    
-    if let blockAfterTrailingComma {
-      body = .init(
-        blockAfterTrailingComma.unexpectedBeforeLeftBrace,
-        leftBrace: blockAfterTrailingComma.leftBrace,
-        statements: blockAfterTrailingComma.statements,
-        blockAfterTrailingComma.unexpectedBetweenStatementsAndRightBrace,
-        rightBrace: blockAfterTrailingComma.rightBrace,
-        blockAfterTrailingComma.unexpectedAfterRightBrace,
-        arena: self.arena
-      )
-    } else {
+    var body: RawCodeBlockSyntax
+        
+    if experimentalFeatures.contains(.trailingComma) {
+      if !self.at(prefix: "{"), let blockAfterTrailingComma = extractCodeBlockFromLast(&conditions) {
+        body = blockAfterTrailingComma
+      } else {
         body = self.parseCodeBlock(introducer: whileKeyword)
+        if body.leftBrace.isMissing, body.rightBrace.isMissing, let blockAfterTrailingComma = extractCodeBlockFromLast(&conditions) {
+          body = blockAfterTrailingComma
+        }
+      }
+    } else {
+      body = self.parseCodeBlock(introducer: whileKeyword)
     }
     
     return RawWhileStmtSyntax(

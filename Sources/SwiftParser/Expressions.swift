@@ -1875,8 +1875,10 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
-      if allowTrailingComma, currentToken.rawTokenKind == .rightParen {
-        break
+      if experimentalFeatures.contains(.trailingComma) {
+        if allowTrailingComma, currentToken.rawTokenKind == .rightParen {
+          break
+        }
       }
       let unexpectedBeforeLabel: RawUnexpectedNodesSyntax?
       let label: RawTokenSyntax?
@@ -2091,46 +2093,63 @@ extension Parser {
 // MARK: Conditional Expressions
 
 extension Parser {
+  
+  func extractCodeBlockFromLast(_ conditions: inout RawConditionElementListSyntax) -> RawCodeBlockSyntax? {
+    if let closure = conditions.elements.last?.condition.as(RawClosureExprSyntax.self), closure.signature == nil {
+      var elements = conditions.elements
+      elements.removeLast()
+      conditions = RawConditionElementListSyntax(elements: elements, arena: self.arena)
+      return RawCodeBlockSyntax(
+        closure.unexpectedBeforeLeftBrace,
+        leftBrace: closure.leftBrace,
+        statements: closure.statements,
+        closure.unexpectedBetweenStatementsAndRightBrace,
+        rightBrace: closure.rightBrace,
+        closure.unexpectedAfterRightBrace,
+        arena: self.arena
+      )
+    } else {
+      return nil
+    }
+  }
+  
   /// Parse an if statement/expression.
-mutating func parseIfExpression(
-  ifHandle: RecoveryConsumptionHandle
-) -> RawIfExprSyntax {
-  let (unexpectedBeforeIfKeyword, ifKeyword) = self.eat(ifHandle)
+  mutating func parseIfExpression(ifHandle: RecoveryConsumptionHandle) -> RawIfExprSyntax {
+  
+    let (unexpectedBeforeIfKeyword, ifKeyword) = self.eat(ifHandle)
 
-  var conditions: RawConditionElementListSyntax
-  
-  var blockAfterTrailingComma: RawClosureExprSyntax?
-
-  if self.at(.leftBrace) {
-    conditions = RawConditionElementListSyntax(
-      elements: [
-        RawConditionElementSyntax(
-          condition: .expression(RawExprSyntax(RawMissingExprSyntax(arena: self.arena))),
-          trailingComma: nil,
-          arena: self.arena
-        )
-      ],
-      arena: self.arena
-    )
-  } else {
-    (conditions, blockAfterTrailingComma) = self.parseConditionListWithTrailingCommaBlock()
-  }
-  
-  let body: RawCodeBlockSyntax
-  
-  if let blockAfterTrailingComma {
-    body = .init(
-      blockAfterTrailingComma.unexpectedBeforeLeftBrace,
-      leftBrace: blockAfterTrailingComma.leftBrace,
-      statements: blockAfterTrailingComma.statements,
-      blockAfterTrailingComma.unexpectedBetweenStatementsAndRightBrace,
-      rightBrace: blockAfterTrailingComma.rightBrace,
-      blockAfterTrailingComma.unexpectedAfterRightBrace,
-      arena: self.arena
-    )
-  } else {
+    var conditions: RawConditionElementListSyntax
+    
+    if self.at(.leftBrace) {
+      conditions = RawConditionElementListSyntax(
+        elements: [
+          RawConditionElementSyntax(
+            condition: .expression(RawExprSyntax(RawMissingExprSyntax(arena: self.arena))),
+            trailingComma: nil,
+            arena: self.arena
+          )
+        ],
+        arena: self.arena
+      )
+    } else {
+      conditions = self.parseConditionList()
+    }
+    
+    
+    var body: RawCodeBlockSyntax
+    
+    if experimentalFeatures.contains(.trailingComma) {
+      if !self.at(prefix: "{"), let blockAfterTrailingComma = extractCodeBlockFromLast(&conditions) {
+        body = blockAfterTrailingComma
+      } else {
+        body = self.parseCodeBlock(introducer: ifKeyword)
+        if body.leftBrace.isMissing, body.rightBrace.isMissing, let blockAfterTrailingComma = extractCodeBlockFromLast(&conditions) {
+          body = blockAfterTrailingComma
+        }
+      }
+    } else {
       body = self.parseCodeBlock(introducer: ifKeyword)
-  }
+    }
 
     // The else branch, if any, is outside of the scope of the condition.
     let elseKeyword = self.consume(if: .keyword(.else))

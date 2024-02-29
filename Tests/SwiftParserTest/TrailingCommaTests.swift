@@ -10,61 +10,87 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_spi(RawSyntax) import SwiftParser
-@_spi(RawSyntax) import SwiftSyntax
+@_spi(ExperimentalLanguageFeatures) import SwiftParser
 import XCTest
 
 final class TrailingCommaTests: ParserTestCase {
   
   func testTuple() {
-    assertParse("(1, 2, 3,)", diagnostics: [])
+    assertParse("(1, 2, 3,)", experimentalFeatures: .trailingComma)
     assertParse(
       "(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in tuple", fixIts: ["insert value"])],
-      fixedSource: "(<#expression#>,)"
+      fixedSource: "(<#expression#>,)",
+      experimentalFeatures: .trailingComma
     )
   }
   
   func testArgumentList() {
-    assertParse("f(1, 2, 3,)", diagnostics: [])
+    
+    assertParse(
+      """
+      if true, { value = 1 }
+      expectEqual(value, 1)
+      """,
+      experimentalFeatures: .trailingComma
+    )
+    
+    assertParse("f(1, 2, 3,)", experimentalFeatures: .trailingComma)
     assertParse(
       "f(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in function call", fixIts: ["insert value"])],
-      fixedSource: "f(<#expression#>,)"
+      fixedSource: "f(<#expression#>,)",
+      experimentalFeatures: .trailingComma
     )
   }
   
   func testIfConditions() {
-    
-   // round-trip
         
-    assertParse("if conditionA, { value = 1 }")
-    assertParse("if conditionA, conditionB, { value = 1 }")
-    assertParse("if conditionA, {x}(), { value = 1 }")
-    assertParse("if conditionA, { a in a == 1 }(1), { value = 1 }")
-    assertParse("if conditionA, conditionB, { value = 1 } else if conditionC, {x}(), { value = 2 }")
+    assertParse("if true, f { $0 }, { true }(), { value = 2 } else { value = 0 }", experimentalFeatures: .trailingComma)
+    assertParse("if conditionA, { value = 1 }", experimentalFeatures: .trailingComma)
+    assertParse("if conditionA, conditionB, { value = 1 }", experimentalFeatures: .trailingComma)
+    assertParse("if conditionA, {x}(), { value = 1 }", experimentalFeatures: .trailingComma)
+    assertParse("if conditionA, { a in a == 1 }(1), { value = 1 }", experimentalFeatures: .trailingComma)
+    assertParse("if conditionA, conditionB, { value = 1 } else if conditionC, {x}(), { value = 2 }", experimentalFeatures: .trailingComma)
     
     assertParse(
       "if 1️⃣,{}",
-      diagnostics: [DiagnosticSpec(message: "missing condition in 'if' statement")]
+      diagnostics: [DiagnosticSpec(message: "missing condition in 'if' statement")],
+      experimentalFeatures: .trailingComma
     )
     
+    assertParse("if conditionA, {}, {}", experimentalFeatures: .trailingComma)
+    
     assertParse(
-      "if conditionA, {}1️⃣, {}",
-      diagnostics: [DiagnosticSpec(message: "extraneous code ', {}' at top level")]
+      """
+      value = 0
+      if true, { value = 1 }
+      expectEqual(value, 1)
+      """,
+      experimentalFeatures: .trailingComma
     )
     
   }
   
   func testGuardConditions() {
-    assertParse("guard conditionA, else { break }")
-    assertParse("guard conditionA, conditionB, else { break }")
-    assertParse("guard conditionA, {x}(), else { break }")
-    assertParse("guard conditionA, { a in a == 1 }(1), else { break }")
+    assertParse("guard conditionA, else { break }", experimentalFeatures: .trailingComma)
+    assertParse("guard conditionA, conditionB, else { break }", experimentalFeatures: .trailingComma)
+    assertParse("guard conditionA, {x}(), else { break }", experimentalFeatures: .trailingComma)
+    assertParse("guard conditionA, { a in a == 1 }(1), else { break }", experimentalFeatures: .trailingComma)
   }
   
   func testWhileConditions() {
-    assertParse("while conditionA, {x}(), { value += 1 }")
+    assertParse(
+      """
+      var value = 5
+      while value != 0, {
+          value -= 1
+      }
+      expectEqual(value, 0)
+      """,
+      experimentalFeatures: .trailingComma
+    )
+    assertParse("while conditionA, {x}(), { value += 1 }", experimentalFeatures: .trailingComma)
   }
   
 }
