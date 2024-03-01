@@ -187,44 +187,6 @@ extension Parser {
     return RawConditionElementListSyntax(elements: elements, arena: self.arena)
   }
   
-  /// Parse a list of condition elements returning optional trailing comma block.
-  mutating func _parseConditionListWithTrailingCommaBlock() -> (conditions: RawConditionElementListSyntax, blockAfterTrailingComma: RawClosureExprSyntax?) {
-    // We have a simple comma separated list of clauses, but also need to handle
-    // a variety of common errors situations (including migrating from Swift 2
-    // syntax).
-    var blockAfterTrailingComma: RawClosureExprSyntax?
-    var elements = [RawConditionElementSyntax]()
-    var keepGoing: RawTokenSyntax? = nil
-    var loopProgress = LoopProgressCondition()
-    repeat {
-      let condition = self.parseConditionElement(lastBindingKind: elements.last?.condition.as(RawOptionalBindingConditionSyntax.self)?.bindingSpecifier)
-      var unexpectedBeforeKeepGoing: RawUnexpectedNodesSyntax? = nil
-      if let block = condition.as(RawClosureExprSyntax.self), block.signature == nil {
-        blockAfterTrailingComma = block
-        keepGoing = nil
-        break
-      } else {
-        keepGoing = self.consume(if: .comma)
-      }
-      if keepGoing == nil, let token = self.consumeIfContextualPunctuator("&&") ?? self.consume(if: .keyword(.where)) {
-        unexpectedBeforeKeepGoing = RawUnexpectedNodesSyntax(combining: unexpectedBeforeKeepGoing, token, arena: self.arena)
-        keepGoing = missingToken(.comma)
-      }
-      elements.append(
-        RawConditionElementSyntax(
-          condition: condition,
-          unexpectedBeforeKeepGoing,
-          trailingComma: keepGoing,
-          arena: self.arena
-        )
-      )
-    } while keepGoing != nil && self.hasProgressed(&loopProgress)
-    
-    let conditions = RawConditionElementListSyntax(elements: elements, arena: self.arena)
-
-    return (conditions, blockAfterTrailingComma)
-  }
-
   /// Parse a condition element.
   ///
   /// `lastBindingKind` will be used to get a correct fall back, when there is missing `var` or `let` in a `if` statement etc.

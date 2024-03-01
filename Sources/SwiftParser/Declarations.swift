@@ -476,9 +476,6 @@ extension Parser {
             arena: self.arena
           )
         )
-        if self.at(prefix: ">") {
-          break
-        }
             
       } while keepGoing != nil && self.hasProgressed(&loopProgress)
     }
