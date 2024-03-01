@@ -741,7 +741,7 @@ extension Parser {
 
       // If there is an expr-call-suffix, parse it and form a call.
       if let lparen = self.consume(if: TokenSpec(.leftParen, allowAtStartOfLine: false)) {
-        let args = self.parseArgumentListElements(pattern: pattern, flavor: flavor.callArgumentFlavor)
+        let args = self.parseArgumentListElements(pattern: pattern, flavor: flavor.callArgumentFlavor, allowTrailingComma: experimentalFeatures.contains(.trailingComma))
         let (unexpectedBeforeRParen, rparen) = self.expect(.rightParen)
 
         // If we can parse trailing closures, do so.
@@ -776,7 +776,7 @@ extension Parser {
         if self.at(.rightSquare) {
           args = []
         } else {
-          args = self.parseArgumentListElements(pattern: pattern)
+          args = self.parseArgumentListElements(pattern: pattern, allowTrailingComma: false)
         }
         let (unexpectedBeforeRSquare, rsquare) = self.expect(.rightSquare)
 
@@ -1006,7 +1006,7 @@ extension Parser {
         if self.at(.rightSquare) {
           args = []
         } else {
-          args = self.parseArgumentListElements(pattern: pattern)
+          args = self.parseArgumentListElements(pattern: pattern, allowTrailingComma: false)
         }
         let (unexpectedBeforeRSquare, rsquare) = self.expect(.rightSquare)
 
@@ -1314,7 +1314,7 @@ extension Parser {
     let unexpectedBeforeRightParen: RawUnexpectedNodesSyntax?
     let rightParen: RawTokenSyntax?
     if leftParen != nil {
-      args = parseArgumentListElements(pattern: pattern)
+      args = parseArgumentListElements(pattern: pattern, allowTrailingComma: false)
       (unexpectedBeforeRightParen, rightParen) = self.expect(.rightParen)
     } else {
       args = []
@@ -1425,7 +1425,7 @@ extension Parser {
   /// Parse a tuple expression.
   mutating func parseTupleExpression(pattern: PatternContext) -> RawTupleExprSyntax {
     let (unexpectedBeforeLParen, lparen) = self.expect(.leftParen)
-    let elements = self.parseArgumentListElements(pattern: pattern)
+    let elements = self.parseArgumentListElements(pattern: pattern, allowTrailingComma: experimentalFeatures.contains(.trailingComma))
     let (unexpectedBeforeRParen, rparen) = self.expect(.rightParen)
     return RawTupleExprSyntax(
       unexpectedBeforeLParen,
@@ -1853,7 +1853,7 @@ extension Parser {
   ///
   /// This is currently the same as parsing a tuple expression. In the future,
   /// this will be a dedicated argument list type.
-  mutating func parseArgumentListElements(pattern: PatternContext, flavor: ExprFlavor = .basic, allowTrailingComma: Bool = true) -> [RawLabeledExprSyntax] {
+  mutating func parseArgumentListElements(pattern: PatternContext, flavor: ExprFlavor = .basic, allowTrailingComma: Bool) -> [RawLabeledExprSyntax] {
     if let remainingTokens = remainingTokensIfMaximumNestingLevelReached() {
       return [
         RawLabeledExprSyntax(
