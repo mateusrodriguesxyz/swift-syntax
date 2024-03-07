@@ -16,26 +16,39 @@ import XCTest
 final class TrailingCommaTests: ParserTestCase {
   
   func testTuple() {
+    
     assertParse("(1, 2, 3,)", experimentalFeatures: .trailingComma)
+    
     assertParse(
       "(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in tuple", fixIts: ["insert value"])],
       fixedSource: "(<#expression#>,)",
       experimentalFeatures: .trailingComma
     )
-  }
-  
-  func testArgumentList() {
     
     assertParse(
-      """
-      if true, { value = 1 }
-      expectEqual(value, 1)
-      """,
+      "ℹ️(1, 2, 3,1️⃣",
+      diagnostics: [DiagnosticSpec(message: "expected ')' to end tuple", notes: [NoteSpec(message: "to match this opening '('")], fixIts: ["insert ')'"])],
+      fixedSource: "(1, 2, 3,)",
       experimentalFeatures: .trailingComma
     )
     
+  }
+  
+  func testArgumentList() {
     assertParse("f(1, 2, 3,)", experimentalFeatures: .trailingComma)
+    assertParse(
+      "fℹ️(1, 2, 3,1️⃣",
+      diagnostics: [
+        DiagnosticSpec(
+          message: "expected ')' to end function call",
+          notes: [NoteSpec(message: "to match this opening '('")],
+          fixIts: ["insert ')'"]
+        )
+      ],
+      fixedSource: "f(1, 2, 3,)",
+      experimentalFeatures: [.trailingComma]
+    )
     assertParse(
       "f(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in function call", fixIts: ["insert value"])],
@@ -45,52 +58,73 @@ final class TrailingCommaTests: ParserTestCase {
   }
   
   func testIfConditions() {
-        
-    assertParse("if true, f { $0 }, { true }(), { value = 2 } else { value = 0 }", experimentalFeatures: .trailingComma)
-    assertParse("if conditionA, { value = 1 }", experimentalFeatures: .trailingComma)
-    assertParse("if conditionA, conditionB, { value = 1 }", experimentalFeatures: .trailingComma)
-    assertParse("if conditionA, {x}(), { value = 1 }", experimentalFeatures: .trailingComma)
-    assertParse("if conditionA, { a in a == 1 }(1), { value = 1 }", experimentalFeatures: .trailingComma)
-    assertParse("if conditionA, conditionB, { value = 1 } else if conditionC, {x}(), { value = 2 }", experimentalFeatures: .trailingComma)
     
     assertParse(
-      "if 1️⃣,{}",
+      """
+      if true, f { $0 }, { true }(), { a in a == 1 }(1), { print("if") } else { print("else") }
+      """,
+      experimentalFeatures: .trailingComma
+    )
+        
+    assertParse("if true, { if true { { } } }", experimentalFeatures: .trailingComma)
+        
+    assertParse("if true, { true } { print(0) }", experimentalFeatures: .trailingComma)
+        
+    assertParse(
+      """
+      if true, { print(0) }
+      (1, 2, 3)
+      """,
+      experimentalFeatures: .trailingComma
+    )
+    
+    assertParse(
+      """
+      if true, { print(0) }
+      { }()
+      """,
+      experimentalFeatures: .trailingComma
+    )
+
+    assertParse(
+      "if 1️⃣,{ }",
       diagnostics: [DiagnosticSpec(message: "missing condition in 'if' statement")],
       experimentalFeatures: .trailingComma
     )
     
-    assertParse("if conditionA, {}, {}", experimentalFeatures: .trailingComma)
-    
-    assertParse(
-      """
-      value = 0
-      if true, { value = 1 }
-      expectEqual(value, 1)
-      """,
-      experimentalFeatures: .trailingComma
-    )
+    assertParse("if foo { } bar: { } { }", experimentalFeatures: .trailingComma)
     
   }
   
   func testGuardConditions() {
-    assertParse("guard conditionA, else { break }", experimentalFeatures: .trailingComma)
-    assertParse("guard conditionA, conditionB, else { break }", experimentalFeatures: .trailingComma)
-    assertParse("guard conditionA, {x}(), else { break }", experimentalFeatures: .trailingComma)
-    assertParse("guard conditionA, { a in a == 1 }(1), else { break }", experimentalFeatures: .trailingComma)
+    
+    assertParse("guard true, f { $0 }, { true }(), { a in a == 1 }(1), else { break }", experimentalFeatures: .trailingComma)
+    
+    assertParse(
+      "guard true,1️⃣",
+      diagnostics: [DiagnosticSpec(message: "expected 'else' and body in 'guard' statement", fixIts: ["insert 'else' and body"])],
+      fixedSource: "guard true, else { \n}",
+      experimentalFeatures: .trailingComma
+    )
+    
+    assertParse(
+      "guard 1️⃣, else { return }",
+      diagnostics: [DiagnosticSpec(message: "expected expression in 'guard' statement", fixIts: ["insert expression"])],
+      fixedSource: "guard <#expression#>, else { return }",
+      experimentalFeatures: .trailingComma
+    )
+    
+    assertParse(
+      "guard true, 1️⃣, else { return }",
+      diagnostics: [DiagnosticSpec(message: "expected expression in 'guard' statement", fixIts: ["insert expression"])],
+      fixedSource: "guard true, <#expression#>, else { return }",
+      experimentalFeatures: .trailingComma
+    )
+    
   }
   
   func testWhileConditions() {
-    assertParse(
-      """
-      var value = 5
-      while value != 0, {
-          value -= 1
-      }
-      expectEqual(value, 0)
-      """,
-      experimentalFeatures: .trailingComma
-    )
-    assertParse("while conditionA, {x}(), { value += 1 }", experimentalFeatures: .trailingComma)
+    assertParse("while true, f { $0 }, { true }(), { a in a == 1 }(1), { print(0) }", experimentalFeatures: .trailingComma)
   }
   
 }
