@@ -1906,16 +1906,15 @@ extension Parser {
         expr = self.parseExpression(flavor: flavor, pattern: pattern)
       }
       keepGoing = self.consume(if: .comma)
-      
+
       // argument list with trailing comma but missing closing ')'.
-      if
-        experimentalFeatures.contains(.trailingComma),
+      if experimentalFeatures.contains(.trailingComma),
         keepGoing == nil,
         expr.is(RawMissingExprSyntax.self)
       {
         continue
       }
-      
+
       result.append(
         RawLabeledExprSyntax(
           unexpectedBeforeLabel,
@@ -2048,10 +2047,6 @@ extension Parser.Lookahead {
     guard lookahead.consume(if: .rightBrace) != nil else {
       return false
     }
-    
-    if lookahead.atStartOfLabelledTrailingClosure() {
-      return true
-    }
 
     switch lookahead.currentToken {
     case TokenSpec(.leftBrace),
@@ -2107,14 +2102,13 @@ extension Parser {
 // MARK: Conditional Expressions
 
 extension Parser {
-  
   /// Parse an if statement/expression.
   mutating func parseIfExpression(ifHandle: RecoveryConsumptionHandle) -> RawIfExprSyntax {
-  
+
     let (unexpectedBeforeIfKeyword, ifKeyword) = self.eat(ifHandle)
-    
-    var conditions: RawConditionElementListSyntax
-    
+
+    let conditions: RawConditionElementListSyntax
+
     if self.at(.leftBrace) {
       conditions = RawConditionElementListSyntax(
         elements: [
@@ -2129,7 +2123,7 @@ extension Parser {
     } else {
       conditions = self.parseConditionList(introducer: ifKeyword)
     }
-    
+
     let body = self.parseCodeBlock(introducer: ifKeyword)
 
     // The else branch, if any, is outside of the scope of the condition.

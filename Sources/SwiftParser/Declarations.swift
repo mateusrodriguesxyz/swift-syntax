@@ -476,7 +476,6 @@ extension Parser {
             arena: self.arena
           )
         )
-            
       } while keepGoing != nil && self.hasProgressed(&loopProgress)
     }
 

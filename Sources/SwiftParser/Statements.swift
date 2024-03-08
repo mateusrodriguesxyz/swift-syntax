@@ -155,9 +155,7 @@ extension Parser {
 extension Parser {
   /// Parse a list of condition elements.
   mutating func parseConditionList(introducer: RawTokenSyntax) -> RawConditionElementListSyntax {
-    
     let isGuardStatement = introducer.tokenView.formKind() == .keyword(.guard)
-    
     // We have a simple comma separated list of clauses, but also need to handle
     // a variety of common errors situations (including migrating from Swift 2
     // syntax).
@@ -165,23 +163,21 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
-            
       if experimentalFeatures.contains(.trailingComma), !isGuardStatement, withLookahead({ $0.atStartOfStatementBody() }) {
         break
       }
-      
+
       let condition = self.parseConditionElement(lastBindingKind: elements.last?.condition.as(RawOptionalBindingConditionSyntax.self)?.bindingSpecifier)
-      
+
       var unexpectedBeforeKeepGoing: RawUnexpectedNodesSyntax? = nil
       keepGoing = self.consume(if: .comma)
       if keepGoing == nil, let token = self.consumeIfContextualPunctuator("&&") ?? self.consume(if: .keyword(.where)) {
         unexpectedBeforeKeepGoing = RawUnexpectedNodesSyntax(combining: unexpectedBeforeKeepGoing, token, arena: self.arena)
         keepGoing = missingToken(.comma)
       }
-      
+
       // 'guard' with trailing comma but missing 'else' and body.
-      if
-        experimentalFeatures.contains(.trailingComma),
+      if experimentalFeatures.contains(.trailingComma),
         isGuardStatement,
         keepGoing == nil,
         elements.count == 1,
@@ -189,7 +185,7 @@ extension Parser {
       {
         continue
       }
-            
+
       elements.append(
         RawConditionElementSyntax(
           condition: condition,
@@ -198,17 +194,17 @@ extension Parser {
           arena: self.arena
         )
       )
-    
+
       // terminator for valid 'guard' statement with trailing comma and 'else'
       if experimentalFeatures.contains(.trailingComma), isGuardStatement, self.at(.keyword(.else)) {
         break
       }
-      
+
     } while keepGoing != nil && self.hasProgressed(&loopProgress)
 
     return RawConditionElementListSyntax(elements: elements, arena: self.arena)
   }
-  
+
   /// Parse a condition element.
   ///
   /// `lastBindingKind` will be used to get a correct fall back, when there is missing `var` or `let` in a `if` statement etc.
@@ -511,7 +507,7 @@ extension Parser {
   /// Parse a while statement.
   mutating func parseWhileStatement(whileHandle: RecoveryConsumptionHandle) -> RawWhileStmtSyntax {
     let (unexpectedBeforeWhileKeyword, whileKeyword) = self.eat(whileHandle)
-    var conditions: RawConditionElementListSyntax
+    let conditions: RawConditionElementListSyntax
     if self.at(.leftBrace) {
       conditions = RawConditionElementListSyntax(
         elements: [
@@ -526,9 +522,9 @@ extension Parser {
     } else {
       conditions = self.parseConditionList(introducer: whileKeyword)
     }
-    
+
     let body = self.parseCodeBlock(introducer: whileKeyword)
-    
+
     return RawWhileStmtSyntax(
       unexpectedBeforeWhileKeyword,
       whileKeyword: whileKeyword,
@@ -1066,15 +1062,14 @@ extension Parser.Lookahead {
     } while lookahead.at(.poundIf, .poundElseif, .poundElse) && lookahead.hasProgressed(&loopProgress)
     return lookahead.atStartOfSwitchCase()
   }
-  
+
   mutating func atStartOfStatementBody() -> Bool {
-    
     guard consume(if: .leftBrace) != nil else {
       return false
     }
-        
+
     var loopProgress = LoopProgressCondition()
-    
+
     var braces = 1
 
     while !at(.endOfFile) && hasProgressed(&loopProgress) {
@@ -1096,9 +1091,8 @@ extension Parser.Lookahead {
         braces += 1
       }
     }
-    
+
     return false
-    
   }
-  
+
 }
