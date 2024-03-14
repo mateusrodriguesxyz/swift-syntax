@@ -741,7 +741,11 @@ extension Parser {
 
       // If there is an expr-call-suffix, parse it and form a call.
       if let lparen = self.consume(if: TokenSpec(.leftParen, allowAtStartOfLine: false)) {
-        let args = self.parseArgumentListElements(pattern: pattern, flavor: flavor.callArgumentFlavor, allowTrailingComma: experimentalFeatures.contains(.trailingComma))
+        let args = self.parseArgumentListElements(
+          pattern: pattern,
+          flavor: flavor.callArgumentFlavor,
+          allowTrailingComma: experimentalFeatures.contains(.trailingComma)
+        )
         let (unexpectedBeforeRParen, rparen) = self.expect(.rightParen)
 
         // If we can parse trailing closures, do so.
@@ -1875,10 +1879,8 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
-      if experimentalFeatures.contains(.trailingComma) {
-        if allowTrailingComma, currentToken.rawTokenKind == .rightParen {
-          break
-        }
+      if allowTrailingComma, currentToken.rawTokenKind == .rightParen {
+        break
       }
       let unexpectedBeforeLabel: RawUnexpectedNodesSyntax?
       let label: RawTokenSyntax?
@@ -1910,7 +1912,8 @@ extension Parser {
       // argument list with trailing comma but missing closing ')'.
       if experimentalFeatures.contains(.trailingComma),
         keepGoing == nil,
-        expr.is(RawMissingExprSyntax.self)
+        expr.is(RawMissingExprSyntax.self),
+        !self.at(.rightParen)
       {
         continue
       }
@@ -2121,7 +2124,7 @@ extension Parser {
         arena: self.arena
       )
     } else {
-      conditions = self.parseConditionList(introducer: ifKeyword)
+      conditions = self.parseConditionList(isGuardStatement: false)
     }
 
     let body = self.parseCodeBlock(introducer: ifKeyword)
