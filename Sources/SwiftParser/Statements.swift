@@ -10,7 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
 @_spi(RawSyntax) @_spi(ExperimentalLanguageFeatures) import SwiftSyntax
 
 extension TokenConsumer {
@@ -171,17 +170,6 @@ extension Parser {
         unexpectedBeforeKeepGoing = RawUnexpectedNodesSyntax(combining: unexpectedBeforeKeepGoing, token, arena: self.arena)
         keepGoing = missingToken(.comma)
       }
-
-      // `guard` with trailing comma but missing `else` and body.
-      if experimentalFeatures.contains(.trailingComma),
-        isGuardStatement,
-        keepGoing == nil,
-        elements.count == 1,
-        condition.is(RawMissingExprSyntax.self)
-      {
-        continue
-      }
-
       elements.append(
         RawConditionElementSyntax(
           condition: condition,

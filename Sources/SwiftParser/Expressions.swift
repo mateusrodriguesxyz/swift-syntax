@@ -1908,16 +1908,6 @@ extension Parser {
         expr = self.parseExpression(flavor: flavor, pattern: pattern)
       }
       keepGoing = self.consume(if: .comma)
-
-      // argument list with trailing comma but missing closing ')'.
-      if experimentalFeatures.contains(.trailingComma),
-        keepGoing == nil,
-        expr.is(RawMissingExprSyntax.self),
-        !self.at(.rightParen)
-      {
-        continue
-      }
-
       result.append(
         RawLabeledExprSyntax(
           unexpectedBeforeLabel,
@@ -2107,7 +2097,6 @@ extension Parser {
 extension Parser {
   /// Parse an if statement/expression.
   mutating func parseIfExpression(ifHandle: RecoveryConsumptionHandle) -> RawIfExprSyntax {
-
     let (unexpectedBeforeIfKeyword, ifKeyword) = self.eat(ifHandle)
 
     let conditions: RawConditionElementListSyntax
