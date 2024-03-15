@@ -184,12 +184,14 @@ extension Parser {
   }
 
   mutating func atConditionListTerminator(isGuardStatement: Bool) -> Bool {
-    if experimentalFeatures.contains(.trailingComma) {
-      // condition terminator is `else` for `guard` statements and start of statement body for `if` or `while` statements
-      return isGuardStatement ? self.at(.keyword(.else)) : withLookahead({ $0.atStartOfStatementBody() })
-    } else {
+    guard experimentalFeatures.contains(.trailingComma) else {
       return false
     }
+    // condition terminator is `else` for `guard` statements and start of statement body for `if` or `while` statements
+    if isGuardStatement {
+      return self.at(.keyword(.else))
+    }
+    return withLookahead({ $0.atStartOfStatementBody() })
   }
 
   /// Parse a condition element.
@@ -1070,12 +1072,9 @@ extension Parser.Lookahead {
       // Note that `guard` condition does not use `atStartOfStatementBody`.
       return true
     }
-    if self.at(.rightBrace) {
-      // The `if` or `while` statement must be inside braces.
-      return true
-    }
-    if self.at(.rightParen) {
-      // The `if` or `while` statement must be inside parentheses.
+    if self.at(.rightBrace, .rightParen) {
+      // A right brace or parenthesis cannot start a statement body, nor can the condition list continue afterwards. So, this must be the statement body.
+      // This covers cases like `if true, { if true, { } }` or `( if true, { print(0) } )`. While the latter is not valid code, it improves diagnostics.
       return true
     }
     if self.atStartOfLine {

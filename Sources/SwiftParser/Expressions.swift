@@ -1879,9 +1879,6 @@ extension Parser {
     var keepGoing: RawTokenSyntax? = nil
     var loopProgress = LoopProgressCondition()
     repeat {
-      if allowTrailingComma, currentToken.rawTokenKind == .rightParen {
-        break
-      }
       let unexpectedBeforeLabel: RawUnexpectedNodesSyntax?
       let label: RawTokenSyntax?
       let colon: RawTokenSyntax?
@@ -1918,8 +1915,16 @@ extension Parser {
           arena: self.arena
         )
       )
-    } while keepGoing != nil && self.hasProgressed(&loopProgress)
+    } while keepGoing != nil && !atArgumentListTerminator(allowTrailingComma) && self.hasProgressed(&loopProgress)
     return result
+  }
+
+  mutating func atArgumentListTerminator(_ allowTrailingComma: Bool) -> Bool {
+    if allowTrailingComma, self.at(.rightParen) {
+      return true
+    } else {
+      return false
+    }
   }
 }
 
