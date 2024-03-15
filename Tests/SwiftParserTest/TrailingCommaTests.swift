@@ -15,14 +15,15 @@ import SwiftSyntax
 import XCTest
 
 final class TrailingCommaTests: ParserTestCase {
+  override var experimentalFeatures: Parser.ExperimentalFeatures { [.trailingComma] }
+
   func testTuple() {
     assertParse("(1, 2, 3,)", experimentalFeatures: .trailingComma)
 
     assertParse(
       "(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in tuple", fixIts: ["insert value"])],
-      fixedSource: "(<#expression#>,)",
-      experimentalFeatures: .trailingComma
+      fixedSource: "(<#expression#>,)"
     )
   }
 
@@ -32,35 +33,32 @@ final class TrailingCommaTests: ParserTestCase {
     assertParse(
       "f(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in function call", fixIts: ["insert value"])],
-      fixedSource: "f(<#expression#>,)",
-      experimentalFeatures: .trailingComma
+      fixedSource: "f(<#expression#>,)"
     )
   }
 
   func testIfConditions() {
-    assertParse("if true, { }", experimentalFeatures: .trailingComma)
+    assertParse("if true, { }")
 
-    assertParse("if true, { }; { }()", experimentalFeatures: .trailingComma)
+    assertParse("if true, { }; { }()")
 
     assertParse(
       """
       if true, { print("if-body") } else { print("else-body") }
-      """,
-      experimentalFeatures: .trailingComma
+      """
     )
 
     assertParse(
       """
       if true, { print("if-body") } else if true, { print("else-if-body") } { print("else-body") }
-      """,
-      experimentalFeatures: .trailingComma
+      """
     )
 
-    assertParse("if true, { if true { { } } }", experimentalFeatures: .trailingComma)
+    assertParse("if true, { if true { { } } }")
 
-    assertParse("{ if true, { print(0) } }", experimentalFeatures: .trailingComma)
+    assertParse("{ if true, { print(0) } }")
 
-    assertParse("( if true, { print(0) } )", experimentalFeatures: .trailingComma)
+    assertParse("( if true, { print(0) } )")
 
     assertParse(
       """
@@ -68,12 +66,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ true }()")), trailingComma: nil),
+            ConditionElementSyntax(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax(condition: .expression("{ true }()"), trailingComma: nil),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -82,12 +79,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ true }")), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ true }"), trailingComma: .commaToken()),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -96,12 +92,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ true }")), trailingComma: nil),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ true }"), trailingComma: nil),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -111,11 +106,10 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken())
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken())
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -125,12 +119,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ true }")), trailingComma: nil),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ true }"), trailingComma: nil),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -140,12 +133,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ true }")), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ true }"), trailingComma: .commaToken()),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -155,12 +147,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ true }+++")), trailingComma: nil),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ true }+++"), trailingComma: nil),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -169,12 +160,11 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ (x: () -> Void) in true } != nil")), trailingComma: nil),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ (x: () -> Void) in true } != nil"), trailingComma: nil),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
@@ -187,33 +177,30 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "true")), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .init(ExprSyntax(stringLiteral: "{ (x: () -> Void) in true } != nil")), trailingComma: nil),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax.init(condition: .expression("{ (x: () -> Void) in true } != nil"), trailingComma: nil),
         ],
         body: "{ print(0) }"
-      ),
-      experimentalFeatures: .trailingComma
+      )
     )
 
     assertParse(
       "if 1️⃣, { }",
-      diagnostics: [DiagnosticSpec(message: "missing condition in 'if' statement")],
-      experimentalFeatures: .trailingComma
+      diagnostics: [DiagnosticSpec(message: "missing condition in 'if' statement")]
     )
   }
 
   func testGuardConditions() {
-    assertParse("guard true, else { break }", experimentalFeatures: .trailingComma)
+    assertParse("guard true, else { break }")
 
     assertParse(
       "guard true, 1️⃣, else { return }",
       diagnostics: [DiagnosticSpec(message: "expected expression in 'guard' statement", fixIts: ["insert expression"])],
-      fixedSource: "guard true, <#expression#>, else { return }",
-      experimentalFeatures: .trailingComma
+      fixedSource: "guard true, <#expression#>, else { return }"
     )
   }
 
   func testWhileConditions() {
-    assertParse("while true, { print(0) }", experimentalFeatures: .trailingComma)
+    assertParse("while true, { print(0) }")
   }
 }
