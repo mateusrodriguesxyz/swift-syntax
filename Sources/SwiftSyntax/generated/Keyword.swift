@@ -235,6 +235,8 @@ public enum Keyword: UInt8, Hashable, Sendable {
   case witness_method
   case wrt
   case yield
+    
+    
   
   @_spi(RawSyntax) public init?(_ text: SyntaxText) {
     switch text.count {
@@ -1024,3 +1026,81 @@ public enum Keyword: UInt8, Hashable, Sendable {
     return Keyword.keywordTextLookupTable[Int(self.rawValue)]
   }
 }
+
+
+extension Keyword {
+    
+    public static var knownMisspellings: [String: Keyword] = [:]
+    
+    @_spi(RawSyntax)
+    public init?(misspelling: SyntaxText, keywords: [SyntaxText] = [], tolerance: Double = 0.6) {
+        if let keyword = Keyword(misspelling) {
+            self = keyword
+            return
+        }
+        if let keyword = Keyword.knownMisspellings[misspelling.description] {
+            self = keyword
+            return
+        }
+        guard misspelling.count > 2 else { return nil }
+        let _misspelling = misspelling.description
+        var _keyword: SyntaxText?
+        var _distance = 0.0
+        let candidates: [SyntaxText] = keywords
+        
+//        let candidates: [SyntaxText] = []
+        for keyword in candidates {
+            
+            let distance = _misspelling.levenshteinDistanceScore(to: keyword.description)
+            if distance > _distance {
+                _keyword = keyword
+                _distance = distance
+            }
+        }
+        if let _keyword {
+            if _distance >= tolerance {
+                self = Keyword(_keyword)!
+                Keyword.knownMisspellings[misspelling.description] = self
+            } else {
+                return nil
+            }
+        } else {
+            return nil
+        }
+    }
+    
+}
+
+extension String {
+    func levenshteinDistanceScore(to string: String, ignoreCase: Bool = true) -> Double {
+
+        var firstString = self
+        var secondString = string
+
+        if ignoreCase {
+            firstString = firstString.lowercased()
+            secondString = secondString.lowercased()
+        }
+
+        let empty = [Int](repeating:0, count: secondString.count)
+        var last = [Int](0...secondString.count)
+
+        for (i, tLett) in firstString.enumerated() {
+            var cur = [i + 1] + empty
+            for (j, sLett) in secondString.enumerated() {
+                cur[j + 1] = tLett == sLett ? last[j] : Swift.min(last[j], last[j + 1], cur[j])+1
+            }
+            last = cur
+        }
+
+        // maximum string length between the two
+        let lowestScore = max(firstString.count, secondString.count)
+
+        if let validDistance = last.last {
+            return  1 - (Double(validDistance) / Double(lowestScore))
+        }
+
+        return 0.0
+    }
+}
+

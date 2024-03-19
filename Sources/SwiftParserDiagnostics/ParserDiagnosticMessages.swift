@@ -266,6 +266,9 @@ extension DiagnosticMessage where Self == StaticParserError {
   public static var versionComparisonNotNeeded: Self {
     .init("version comparison not needed")
   }
+    public static var misspelled: Self {
+      .init("misspelled token")
+    }
 }
 
 // MARK: - Diagnostics (please sort alphabetically)
@@ -476,6 +479,20 @@ public struct MissingExpressionInStatement: ParserError {
   }
 }
 
+public struct MisspelledKeyword: ParserError {
+    
+    let tokenKind: TokenKind
+    
+    public var message: String {
+        if case let .keyword(keyword) = tokenKind {
+            "did you mean to use `\(keyword.defaultText)` keyword?"
+        } else {
+            "misspelled keyword"
+        }
+    }
+    
+}
+
 public struct NegatedAvailabilityCondition: ParserError {
   public let availabilityCondition: AvailabilityConditionSyntax
   public let negatedAvailabilityKeyword: TokenSyntax
@@ -680,6 +697,16 @@ extension FixItMessage where Self == StaticParserFixIt {
   }
   public static var wrapInBackticks: Self {
     .init("if this name is unavoidable, use backticks to escape it")
+  }
+}
+
+public struct ReplaceMisspelledKeywordFixIt: ParserFixIt {
+   
+  public let misspelling: String
+  public let keyword: String
+
+  public var message: String {
+      "replace `\(misspelling)` with `\(keyword)`"
   }
 }
 

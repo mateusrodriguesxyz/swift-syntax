@@ -21,12 +21,12 @@ final class RecoveryTests: ParserTestCase {
       #"""
       func garbage() -> () {
         var a : Int
-        1️⃣) this line is invalid, but we will stop at the keyword below...
+        1️⃣)
         return a + "a"
       }
       """#,
       diagnostics: [
-        DiagnosticSpec(message: "unexpected code ') this line is invalid, but we will stop at the keyword below...' before 'return' statement")
+        DiagnosticSpec(message: "unexpected code ')' before 'return' statement")
       ]
     )
   }

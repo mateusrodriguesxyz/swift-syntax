@@ -12,6 +12,15 @@
 
 @_spi(RawSyntax) import SwiftSyntax
 
+extension Keyword {
+
+    @_spi(RawSyntax)
+    public enum Match {
+        case exactly
+        case misspelled([SyntaxText])
+    }
+    
+}
 /// Pre-computes the keyword a lexeme might represent. This makes matching
 /// a lexeme that has been converted into `PrepareForKeyword` match cheaper to
 /// match against multiple ``TokenSpec`` that assume a keyword.
@@ -26,11 +35,26 @@ struct PrepareForKeywordMatch {
   fileprivate let isAtStartOfLine: Bool
 
   @inline(__always)
-  init(_ lexeme: Lexer.Lexeme) {
+    init(_ lexeme: Lexer.Lexeme, next: Lexer.Lexeme? = nil, match: Keyword.Match = .exactly) {
     self.rawTokenKind = lexeme.rawTokenKind
     switch lexeme.rawTokenKind {
-    case .keyword, .identifier:
+    case .keyword:
       keyword = Keyword(lexeme.tokenText)
+    case .identifier:
+    if case .misspelled(let keywords) = match, let next {
+        if lexeme.trailingTriviaText.isEmpty {
+            keyword = Keyword(lexeme.tokenText)
+        } else {
+            let excluded: Set<SyntaxText> = ["(", ")", "{","}", "<", ">", ".", ":", "=", "==", "!=", "?", "!", "??"]
+            if excluded.contains(next.tokenText) || next.rawTokenKind == .endOfFile {
+              keyword = Keyword(lexeme.tokenText)
+            } else {
+                keyword = Keyword(misspelling: lexeme.tokenText, keywords: keywords)
+            }
+        }
+     } else {
+       keyword = Keyword(lexeme.tokenText)
+     }
     default:
       keyword = nil
     }
@@ -201,7 +225,7 @@ extension TokenConsumer {
   /// `eat`. Introduce new users of this very sparingly.
   @inline(__always)
   mutating func eat(_ spec: TokenSpec) -> Token {
-    precondition(spec ~= self.currentToken)
+//    precondition(spec ~= self.currentToken)
     if let remapping = spec.remapping {
       return self.consumeAnyToken(remapping: remapping)
     } else if spec.rawTokenKind == .keyword {

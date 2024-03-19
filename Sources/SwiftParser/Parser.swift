@@ -500,6 +500,15 @@ extension Parser {
       unexpectedNodes = nil
     }
     let token = self.eat(handle.tokenConsumptionHandle)
+    if token.tokenKind == .keyword, let keyword = handle.tokenConsumptionHandle.spec.synthesizedTokenKind.defaultText {
+        if token.tokenText != keyword {
+            let diagnostic = TokenDiagnostic(
+              .misspelledKeyword,
+              byteOffset: token.leadingTriviaByteLength + token.tokenText.count
+            )
+            return (unexpectedNodes, token.tokenView.withTokenDiagnostic(tokenDiagnostic: diagnostic, arena: self.arena))
+        }
+    }
     return (unexpectedNodes, token)
   }
 }

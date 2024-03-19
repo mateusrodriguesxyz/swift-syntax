@@ -254,6 +254,7 @@ extension TokenSyntax {
     presence: SourcePresence = .present
     
   ) -> TokenSyntax {
+      
     return TokenSyntax(
       .keyword(value),
       leadingTrivia: leadingTrivia,

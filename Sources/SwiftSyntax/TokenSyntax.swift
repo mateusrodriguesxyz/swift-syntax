@@ -38,6 +38,7 @@ public struct TokenSyntax: SyntaxProtocol, SyntaxHashable {
   public init?<S: SyntaxProtocol>(_ node: S) {
     guard node.raw.kind == .token else { return nil }
     self._syntaxNode = Syntax(node)
+      
   }
 
   /// Construct a new token with the given `kind`, `leadingTrivia`,
@@ -49,6 +50,7 @@ public struct TokenSyntax: SyntaxProtocol, SyntaxHashable {
     presence: SourcePresence
   ) {
     let arena = SyntaxArena()
+      
     let raw = RawSyntax.makeMaterializedToken(
       kind: kind,
       leadingTrivia: leadingTrivia,

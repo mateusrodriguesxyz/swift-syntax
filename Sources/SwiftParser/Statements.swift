@@ -1063,36 +1063,18 @@ extension Parser.Lookahead {
     return lookahead.atStartOfSwitchCase()
   }
 
-  mutating func atStartOfStatementBody() -> Bool {
-    guard consume(if: .leftBrace) != nil else {
-      return false
-    }
-
-    var loopProgress = LoopProgressCondition()
-
-    var braces = 1
-
-    while !at(.endOfFile) && hasProgressed(&loopProgress) {
-      if consume(if: .rightBrace) != nil {
-        braces -= 1
-      } else {
-        consumeAnyToken()
+    mutating func atStartOfStatementBody() -> Bool {
+      guard at(.leftBrace) else {
+        return false
       }
-      if braces == 0 {
-        if self.at(.comma) {
-          return false
-        }
-        if !self.atStartOfLine, self.at(.leftParen) || self.at(.leftBrace) {
-          return false
-        }
+      skipSingle()
+      if self.at(.endOfFile) || self.at(.semicolon, .keyword(.else)) || self.at(.rightBrace, .rightParen) {
         return true
       }
-      if consume(if: .leftBrace) != nil {
-        braces += 1
+      if self.atStartOfLine {
+        return !withLookahead { $0.atStartOfStatementBody() } && !self.at(.binaryOperator)
       }
+      return false
     }
-
-    return false
-  }
 
 }

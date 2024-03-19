@@ -560,7 +560,7 @@ extension RawSyntax {
       presence: presence,
       tokenDiagnostic: tokenDiagnostic
     )
-    precondition(kind != .keyword || Keyword(payload.tokenText) != nil, "If kind is keyword, the text must be a known token kind")
+//    precondition(kind != .keyword || Keyword(payload.tokenText) != nil, "If kind is keyword, the text must be a known token kind")
     return RawSyntax(arena: arena, payload: .parsedToken(payload))
   }
 

@@ -224,11 +224,14 @@ public extension SwiftSyntax.TokenDiagnostic {
     case .unicodeCurlyQuote: return StaticTokenError.unicodeCurlyQuote
     case .unprintableAsciiCharacter: return StaticTokenError.unprintableAsciiCharacter
     case .unterminatedBlockComment: return StaticTokenError.unterminatedBlockComment
+        case .misspelledKeyword: return MisspelledKeyword(tokenKind: token.tokenKind)
     }
   }
 
   func position(in token: TokenSyntax) -> AbsolutePosition {
     switch kind {
+        case .misspelledKeyword:
+            return token.position
     case .extraneousLeadingWhitespaceError, .extraneousLeadingWhitespaceWarning:
       if let previousToken = token.previousToken(viewMode: .all) {
         return previousToken.endPositionBeforeTrailingTrivia
@@ -304,6 +307,13 @@ public extension SwiftSyntax.TokenDiagnostic {
         changes.append(.replaceLeadingTrivia(token: nextToken, newTrivia: []))
       }
       return [FixIt(message: .removeExtraneousWhitespace, changes: changes)]
+    case .misspelledKeyword:
+        var changes: [FixIt.Change] = []
+        let oldNode = Syntax(token)
+        let newNode = Syntax(TokenSyntax(token.tokenKind, trailingTrivia: .space, presence: .present))
+        changes.append(.replace(oldNode: oldNode, newNode: newNode))
+        let message = ReplaceMisspelledKeywordFixIt(misspelling: String(token.description.dropLast()), keyword: token.text)
+        return [FixIt(message: message, changes: changes)]
     default:
       return []
     }

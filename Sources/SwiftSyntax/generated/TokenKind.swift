@@ -775,7 +775,7 @@ extension TokenKind {
     case .keyword:
       var text = text
       return text.withSyntaxText { text in
-        return .keyword(Keyword(text)!)
+          return .keyword(Keyword(misspelling: text, keywords: []) ?? Keyword(text)!)
       }
     case .leftAngle:
       precondition(text.isEmpty || rawKind.defaultText.map(String.init) == text)

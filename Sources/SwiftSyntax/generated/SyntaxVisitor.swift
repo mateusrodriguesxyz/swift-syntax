@@ -32,6 +32,7 @@ open class SyntaxVisitor {
   /// function for every node that is being visited.
   public func walk(_ node: some SyntaxProtocol) {
     visit(Syntax(node))
+      
   }
   
   /// Visiting ``AccessorBlockSyntax`` specifically.

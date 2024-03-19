@@ -208,4 +208,12 @@ extension TokenSyntax {
   var isPresent: Bool {
     return presence == .present
   }
+    
+//    public var isMisspelled: Bool {
+//        if self.rawTokenKind == .keyword, !self.description.isEmpty {
+//            return self.text != self.description
+//        } else {
+//            return false
+//        }
+//    }
 }
