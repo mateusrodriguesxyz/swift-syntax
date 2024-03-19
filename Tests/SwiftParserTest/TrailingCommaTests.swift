@@ -18,7 +18,7 @@ final class TrailingCommaTests: ParserTestCase {
   override var experimentalFeatures: Parser.ExperimentalFeatures { [.trailingComma] }
 
   func testTuple() {
-    assertParse("(1, 2, 3,)", experimentalFeatures: .trailingComma)
+    assertParse("(1, 2, 3,)")
 
     assertParse(
       "(1️⃣,)",
@@ -28,7 +28,7 @@ final class TrailingCommaTests: ParserTestCase {
   }
 
   func testArgumentList() {
-    assertParse("f(1, 2, 3,)", experimentalFeatures: .trailingComma)
+    assertParse("f(1, 2, 3,)")
 
     assertParse(
       "f(1️⃣,)",
@@ -66,7 +66,7 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-            ConditionElementSyntax(condition: .expression("true"), trailingComma: .commaToken()),
+          ConditionElementSyntax(condition: .expression("true"), trailingComma: .commaToken()),
           ConditionElementSyntax(condition: .expression("{ true }()"), trailingComma: nil),
         ],
         body: "{ print(0) }"
