@@ -28,12 +28,30 @@ final class TrailingCommaTests: ParserTestCase {
   }
 
   func testArgumentList() {
-    assertParse("f(1, 2, 3,)")
+    assertParse("foo(1, 2, 3,)")
 
     assertParse(
-      "f(1️⃣,)",
+      "foo(1️⃣,)",
       diagnostics: [DiagnosticSpec(message: "expected value in function call", fixIts: ["insert value"])],
-      fixedSource: "f(<#expression#>,)"
+      fixedSource: "foo(<#expression#>,)"
+    )
+  }
+
+  func testParameterList() {
+    assertParse(
+      """
+      func foo(
+          a: Int = 0,
+          b: Int = 0,
+      ) {
+      }
+      """
+    )
+
+    assertParse(
+      "func foo(1️⃣,) { }",
+      diagnostics: [DiagnosticSpec(message: "expected identifier, ':', and type in parameter", fixIts: ["insert identifier, ':', and type"])],
+      fixedSource: "func foo(<#identifier#>: <#type#>,) { }"
     )
   }
 
@@ -197,6 +215,12 @@ final class TrailingCommaTests: ParserTestCase {
       "guard true, 1️⃣, else { return }",
       diagnostics: [DiagnosticSpec(message: "expected expression in 'guard' statement", fixIts: ["insert expression"])],
       fixedSource: "guard true, <#expression#>, else { return }"
+    )
+
+    assertParse(
+      "guard true, 1️⃣{ return }",
+      diagnostics: [DiagnosticSpec(message: "expected 'else' in 'guard' statement", fixIts: ["insert 'else'"])],
+      fixedSource: "guard true, else { return }"
     )
   }
 

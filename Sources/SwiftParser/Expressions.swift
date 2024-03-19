@@ -1920,11 +1920,7 @@ extension Parser {
   }
 
   mutating func atArgumentListTerminator(_ allowTrailingComma: Bool) -> Bool {
-    if allowTrailingComma, self.at(.rightParen) {
-      return true
-    } else {
-      return false
-    }
+    return allowTrailingComma && self.at(.rightParen)
   }
 }
 

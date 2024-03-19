@@ -187,11 +187,13 @@ extension Parser {
     guard experimentalFeatures.contains(.trailingComma) else {
       return false
     }
-    // condition terminator is `else` for `guard` statements and start of statement body for `if` or `while` statements
-    if isGuardStatement {
-      return self.at(.keyword(.else))
+    // Condition terminator is `else` for `guard` statements.
+    if isGuardStatement, self.at(.keyword(.else)) {
+      return true
     }
-    return withLookahead({ $0.atStartOfStatementBody() })
+    // Condition terminator is start of statement body for `if` or `while` statements.
+    // Missing `else` is a common mistake for `guard` statements so we fall back to lookahead for a body.
+    return self.at(.leftBrace) && withLookahead({ $0.atStartOfConditionalStatementBody() })
   }
 
   /// Parse a condition element.
@@ -1053,7 +1055,7 @@ extension Parser.Lookahead {
   }
 
   /// Returns `true` if the current token represents the start of an `if` or `while` statement body.
-  mutating func atStartOfStatementBody() -> Bool {
+  mutating func atStartOfConditionalStatementBody() -> Bool {
     guard at(.leftBrace) else {
       // Statement bodies always start with a '{'. If there is no '{', we can't be at the statement body.
       return false
@@ -1069,7 +1071,6 @@ extension Parser.Lookahead {
     }
     if self.at(.keyword(.else)) {
       // If the current token is an `else` keyword, this must be the statement body of an `if` statement since conditions can't be followed by `else`.
-      // Note that `guard` condition does not use `atStartOfStatementBody`.
       return true
     }
     if self.at(.rightBrace, .rightParen) {
@@ -1079,7 +1080,7 @@ extension Parser.Lookahead {
     }
     if self.atStartOfLine {
       // If the current token is at the start of a line, it is most likely a statement body. The only exceptions are:
-      if withLookahead({ $0.atStartOfStatementBody() }) {
+      if self.at(.leftBrace) && withLookahead({ $0.atStartOfConditionalStatementBody() }) {
         // If a statement body starts after this on, we actually have a closure followed by the statement body e.g.
         // if true, { true }
         // {
