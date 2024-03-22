@@ -465,9 +465,7 @@ extension Lexer.Cursor {
     if self.currentState.shouldPopStateWhenReachingNewlineInTrailingTrivia && self.is(at: "\r", "\n") {
       self.stateStack.perform(stateTransition: .pop, stateAllocator: stateAllocator)
     }
-
-    diagnostic = TokenDiagnostic(combining: diagnostic, result.error?.tokenDiagnostic(tokenStart: cursor))
-
+      
     let lexeme = Lexer.Lexeme(
       tokenKind: result.tokenKind,
       flags: flags,

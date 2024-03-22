@@ -90,6 +90,9 @@ extension Lexer {
       self.textByteLength = textLength
       self.trailingTriviaByteLength = trailingTriviaLength
       self.cursor = cursor
+        if Keyword.knownMisspellings[self.wholeText.description] != nil {
+            self.diagnostic = TokenDiagnostic(combining: diagnostic, .init(.misspelledKeyword, byteOffset: leadingTriviaLength + textByteLength))
+        }
     }
 
     @_spi(Testing)
