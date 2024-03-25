@@ -24,6 +24,14 @@ protocol TokenSpecSet: CaseIterable {
   /// Creates an instance if `lexeme` satisfies the condition of this subset,
   /// taking into account any `experimentalFeatures` active.
   init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures)
+
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures)
+}
+
+extension TokenSpecSet {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
+    self.init(lexeme: lexeme, experimentalFeatures: experimentalFeatures)
+  }
 }
 
 /// A way to combine two token spec sets into an aggregate token spec set.
@@ -89,7 +97,7 @@ enum AccessorModifier: TokenSpecSet {
   }
 }
 
-enum CanBeStatementStart: TokenSpecSet {
+enum CanBeStatementStart: SyntaxText, TokenSpecSet, CaseIterable {
   case `break`
   case `continue`
   case `defer`
@@ -126,6 +134,31 @@ enum CanBeStatementStart: TokenSpecSet {
     case TokenSpec(.while): self = .while
     case TokenSpec(.yield): self = .yield
     default: return nil
+    }
+  }
+
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.allCases.map(\.rawValue))) {
+    case TokenSpec(.break): self = .break
+    case TokenSpec(.continue): self = .continue
+    case TokenSpec(.defer): self = .defer
+    case TokenSpec(.do): self = .do
+    case TokenSpec(.fallthrough): self = .fallthrough
+    case TokenSpec(.for): self = .for
+    case TokenSpec(.discard): self = .discard
+    case TokenSpec(.guard): self = .guard
+    case TokenSpec(.if): self = .if
+    case TokenSpec(.repeat): self = .repeat
+    case TokenSpec(.return): self = .return
+    case TokenSpec(.switch): self = .switch
+    case TokenSpec(.then): self = .then
+    case TokenSpec(.throw): self = .throw
+    case TokenSpec(.while): self = .while
+    case TokenSpec(.yield): self = .yield
+    case TokenSpec(.identifier):
+      return nil
+    default:
+      return nil
     }
   }
 

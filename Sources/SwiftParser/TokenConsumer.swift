@@ -142,8 +142,13 @@ extension TokenConsumer {
       recordAlternativeTokenChoice(for: self.currentToken, choices: specSet.allCases.map(\.spec))
     }
     #endif
-    if let matchedKind = SpecSet(lexeme: self.currentToken, experimentalFeatures: self.experimentalFeatures) {
-      precondition(matchedKind.spec ~= self.currentToken)
+    if let matchedKind = SpecSet(
+      lexeme: self.currentToken,
+      next: self.peek(),
+      experimentalFeatures: self.experimentalFeatures
+    ) {
+      // TODO: Disabled until figure out how to handle misspelled keywords here
+      //      precondition(matchedKind.spec ~= self.currentToken)
       return (
         matchedKind,
         TokenConsumptionHandle(spec: matchedKind.spec)

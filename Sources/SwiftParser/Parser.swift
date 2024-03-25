@@ -521,7 +521,34 @@ extension Parser {
     } else {
       unexpectedNodes = nil
     }
+    self.currentToken.diagnostic = nil
+
+    let spec = handle.tokenConsumptionHandle.spec
+
+    if case let .keyword(keyword) = spec.synthesizedTokenKind {
+      if currentToken.tokenText != keyword.defaultText,
+        Keyword(misspelling: currentToken.tokenText, keyword: keyword) == keyword
+      {
+        let diagnostic = TokenDiagnostic(
+          .misspelledKeyword(keyword),
+          byteOffset: currentToken.leadingTriviaByteLength + currentToken.tokenText.count
+        )
+        currentToken.diagnostic = TokenDiagnostic(combining: currentToken.diagnostic, diagnostic)
+      }
+    }
+
     let token = self.eat(handle.tokenConsumptionHandle)
+
+    //    if token.tokenKind == .keyword, let keyword = handle.tokenConsumptionHandle.spec.synthesizedTokenKind.defaultText.flatMap(Keyword.init) {
+    //          if token.tokenText != keyword.defaultText {
+    //        let diagnostic = TokenDiagnostic(
+    //          .misspelledKeyword(keyword),
+    //          byteOffset: token.leadingTriviaByteLength + token.tokenText.count
+    //        )
+    //        return (unexpectedNodes, token.tokenView.withTokenDiagnostic(tokenDiagnostic: diagnostic, arena: self.arena))
+    //      }
+    //    }
+
     return (unexpectedNodes, token)
   }
 }

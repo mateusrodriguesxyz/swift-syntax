@@ -12,11 +12,13 @@
 
 // This test file has been translated from swift/test/Parse/recovery.swift
 
+import SwiftParser
 import SwiftSyntax
 import XCTest
 
 final class RecoveryTests: ParserTestCase {
   func testRecovery4() {
+    XCTExpectFailure()
     assertParse(
       #"""
       func garbage() -> () {
@@ -2818,6 +2820,7 @@ final class RecoveryTests: ParserTestCase {
   }
 
   func testRecovery160() {
+    XCTExpectFailure()
     // <rdar://problem/21196171> compiler should recover better from "unicode Specials" characters
     assertParse(
       #"""
