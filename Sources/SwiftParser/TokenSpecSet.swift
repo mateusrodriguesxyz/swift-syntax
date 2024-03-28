@@ -25,11 +25,14 @@ protocol TokenSpecSet: CaseIterable {
   /// taking into account any `experimentalFeatures` active.
   init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures)
 
-  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures)
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures)
 }
 
 extension TokenSpecSet {
-  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
+  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
+    self.init(lexeme: lexeme, next: nil, experimentalFeatures: experimentalFeatures)
+  }
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
     self.init(lexeme: lexeme, experimentalFeatures: experimentalFeatures)
   }
 }
@@ -38,13 +41,13 @@ extension TokenSpecSet {
 enum EitherTokenSpecSet<LHS: TokenSpecSet, RHS: TokenSpecSet>: TokenSpecSet {
   case lhs(LHS)
   case rhs(RHS)
-
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    if let x = LHS(lexeme: lexeme, experimentalFeatures: experimentalFeatures) {
+  
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    if let x = LHS(lexeme: lexeme, next: next, experimentalFeatures: experimentalFeatures) {
       self = .lhs(x)
       return
     }
-    if let y = RHS(lexeme: lexeme, experimentalFeatures: experimentalFeatures) {
+    if let y = RHS(lexeme: lexeme, next: next, experimentalFeatures: experimentalFeatures) {
       self = .rhs(y)
       return
     }
@@ -68,15 +71,15 @@ enum EitherTokenSpecSet<LHS: TokenSpecSet, RHS: TokenSpecSet>: TokenSpecSet {
 
 // MARK: - Subsets
 
-enum AccessorModifier: TokenSpecSet {
+enum AccessorModifier: SyntaxText,TokenSpecSet {
   case __consuming
   case consuming
   case borrowing
   case mutating
   case nonmutating
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.__consuming): self = .__consuming
     case TokenSpec(.consuming): self = .consuming
     case TokenSpec(.borrowing): self = .borrowing
@@ -97,7 +100,7 @@ enum AccessorModifier: TokenSpecSet {
   }
 }
 
-enum CanBeStatementStart: SyntaxText, TokenSpecSet, CaseIterable {
+enum CanBeStatementStart: SyntaxText, TokenSpecSet {
   case `break`
   case `continue`
   case `defer`
@@ -115,35 +118,14 @@ enum CanBeStatementStart: SyntaxText, TokenSpecSet, CaseIterable {
   case `while`
   case yield
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.break): self = .break
     case TokenSpec(.continue): self = .continue
     case TokenSpec(.defer): self = .defer
     case TokenSpec(.do): self = .do
-    case TokenSpec(.fallthrough): self = .fallthrough
-    case TokenSpec(.for): self = .for
-    case TokenSpec(.discard): self = .discard
-    case TokenSpec(.guard): self = .guard
-    case TokenSpec(.if): self = .if
-    case TokenSpec(.repeat): self = .repeat
-    case TokenSpec(.return): self = .return
-    case TokenSpec(.switch): self = .switch
-    case TokenSpec(.then): self = .then
-    case TokenSpec(.throw): self = .throw
-    case TokenSpec(.while): self = .while
-    case TokenSpec(.yield): self = .yield
-    default: return nil
-    }
-  }
-
-  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.allCases.map(\.rawValue))) {
-    case TokenSpec(.break): self = .break
-    case TokenSpec(.continue): self = .continue
-    case TokenSpec(.defer): self = .defer
-    case TokenSpec(.do): self = .do
-    case TokenSpec(.fallthrough): self = .fallthrough
+    case TokenSpec(.fallthrough):
+      self = .fallthrough
     case TokenSpec(.for): self = .for
     case TokenSpec(.discard): self = .discard
     case TokenSpec(.guard): self = .guard
@@ -208,7 +190,7 @@ enum CompilationCondition: TokenSpecSet {
 
 }
 
-enum ContextualDeclKeyword: TokenSpecSet {
+enum ContextualDeclKeyword: SyntaxText, TokenSpecSet {
   case __consuming
   case _compilerInitialized
   case _const
@@ -236,8 +218,8 @@ enum ContextualDeclKeyword: TokenSpecSet {
   case unowned
   case weak
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.__consuming): self = .__consuming
     case TokenSpec(._compilerInitialized): self = ._compilerInitialized
     case TokenSpec(._const): self = ._const
@@ -304,7 +286,7 @@ enum ContextualDeclKeyword: TokenSpecSet {
 ///
 /// `ValueBindingPatternSyntax.BindingSpecifierOptions` are injected into
 /// `DeclarationKeyword` via an `EitherTokenSpecSet`.
-enum PureDeclarationKeyword: TokenSpecSet {
+enum PureDeclarationKeyword: SyntaxText, TokenSpecSet {
   case actor
   case `associatedtype`
   case `case`
@@ -323,9 +305,9 @@ enum PureDeclarationKeyword: TokenSpecSet {
   case `subscript`
   case `typealias`
   case pound
-
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.actor): self = .actor
     case TokenSpec(.macro): self = .macro
     case TokenSpec(.associatedtype): self = .associatedtype
@@ -347,7 +329,7 @@ enum PureDeclarationKeyword: TokenSpecSet {
     default: return nil
     }
   }
-
+  
   var spec: TokenSpec {
     switch self {
     case .actor: return TokenSpec(.actor, recoveryPrecedence: .declKeyword)
@@ -377,7 +359,7 @@ typealias DeclarationKeyword = EitherTokenSpecSet<
   ValueBindingPatternSyntax.BindingSpecifierOptions
 >
 
-enum DeclarationModifier: TokenSpecSet {
+enum DeclarationModifier: SyntaxText, TokenSpecSet {
   case __consuming
   case __setter_access
   case _const
@@ -417,8 +399,8 @@ enum DeclarationModifier: TokenSpecSet {
   case _resultDependsOn
   case _resultDependsOnSelf
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.__consuming): self = .__consuming
     case TokenSpec(.__setter_access): self = .__setter_access
     case TokenSpec(._const): self = ._const
@@ -648,12 +630,12 @@ enum OperatorLike: TokenSpecSet {
   }
 }
 
-enum SwitchCaseStart: TokenSpecSet {
+enum SwitchCaseStart: SyntaxText, TokenSpecSet {
   case `case`
   case `default`
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.case): self = .case
     case TokenSpec(.default): self = .default
     default: return nil
@@ -729,7 +711,7 @@ enum TypeAttribute: TokenSpecSet {
 
 // MARK: Expression start
 
-enum ExpressionModifierKeyword: TokenSpecSet {
+enum ExpressionModifierKeyword: SyntaxText, TokenSpecSet {
   case await
   case _move
   case _borrow
@@ -740,8 +722,8 @@ enum ExpressionModifierKeyword: TokenSpecSet {
   case each
   case any
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.await): self = .await
     case TokenSpec(._move): self = ._move
     case TokenSpec(._borrow): self = ._borrow
@@ -770,13 +752,13 @@ enum ExpressionModifierKeyword: TokenSpecSet {
   }
 }
 
-enum SingleValueStatementExpression: TokenSpecSet {
+enum SingleValueStatementExpression: SyntaxText, TokenSpecSet {
   case `do`
   case `if`
   case `switch`
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.do) where experimentalFeatures.contains(.doExpressions): self = .do
     case TokenSpec(.if): self = .if
     case TokenSpec(.switch): self = .switch
@@ -1005,7 +987,7 @@ enum ExpressionStart: TokenSpecSet {
   }
 }
 
-enum EffectSpecifiers: TokenSpecSet {
+enum EffectSpecifiers: SyntaxText, TokenSpecSet {
   case async
   case await
   case reasync
@@ -1014,8 +996,8 @@ enum EffectSpecifiers: TokenSpecSet {
   case `throws`
   case `try`
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
     case TokenSpec(.async): self = .async
     case TokenSpec(.await, allowAtStartOfLine: false): self = .await
     case TokenSpec(.reasync): self = .reasync

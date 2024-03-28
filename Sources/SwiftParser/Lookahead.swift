@@ -89,6 +89,10 @@ extension Parser.Lookahead: TokenConsumer {
   mutating func eat(_ spec: TokenSpec) -> Token {
     return self.consume(if: spec)!
   }
+  
+  func addDiagnosticToCurrentToken(_ diagnostic: TokenDiagnostic) {
+    // do nothing
+  }
 
   #if SWIFTPARSER_ENABLE_ALTERNATE_TOKEN_INTROSPECTION
   var shouldRecordAlternativeTokenChoices: Bool { false }

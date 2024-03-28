@@ -59,6 +59,8 @@ protocol TokenConsumer {
   /// is interested in.
   mutating func recordAlternativeTokenChoice(for lexeme: Lexer.Lexeme, choices: [TokenSpec])
   #endif
+  
+  mutating func addDiagnosticToCurrentToken(_ diagnostic: TokenDiagnostic)
 }
 
 // MARK: Checking if we are at one specific token (`at`)
@@ -83,6 +85,16 @@ extension TokenConsumer {
       recordAlternativeTokenChoice(for: self.currentToken, choices: [spec])
     }
     #endif
+    if case let .keyword(keyword) = spec.synthesizedTokenKind,
+        currentToken.tokenText != keyword.defaultText,
+        tokenIsPossibleMisspelling(currentToken, next: peek()),
+        Keyword(misspelling: currentToken.tokenText, keyword: keyword) == keyword {
+        let diagnostic = TokenDiagnostic(
+          .misspelledKeyword(keyword),
+          byteOffset: currentToken.leadingTriviaByteLength + currentToken.tokenText.count
+        )
+      self.addDiagnosticToCurrentToken(diagnostic)
+    }
     return spec ~= self.currentToken
   }
 

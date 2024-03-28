@@ -17,22 +17,32 @@
 #endif
 
 extension Keyword {
-
+  
   @_spi(RawSyntax)
   public enum Match {
     case exactly
     case misspelled([SyntaxText])
+
+    static func misspelled<T: TokenSpecSet>(_: T.Type) -> Self where T: RawRepresentable, T.RawValue == SyntaxText {
+      return .misspelled(T.allCases.map(\.rawValue))
+    }
   }
 
   @_spi(RawSyntax)
   public init?(misspelling: SyntaxText, keywords: [SyntaxText] = []) {
-    //    precondition(!keywords.isEmpty)
+    
 
     if let keyword = Keyword(misspelling) {
       self = keyword
       return
     }
-
+    
+    let excludedKeywords: Set<Keyword> = [.`init`, .`deinit`, .repeat]
+    
+    let keywords = keywords.filter {
+      !excludedKeywords.map(\.defaultText).contains($0)
+    }
+    
     if let _keyword = keyword(for: misspelling, candidates: keywords) {
       self = _keyword
     } else {
@@ -51,19 +61,19 @@ extension Keyword {
 fileprivate func keyword(for misspelling: SyntaxText, candidates: [SyntaxText]) -> Keyword? {
 
   guard misspelling.count > 1 else { return nil }
-
-  let _misspelling = misspelling.description
-
+  
   var match: (keyword: SyntaxText?, distance: Int) = (nil, .max)
-
-  print("🤔:", _misspelling)
 
   let candidates = candidates.filter {
     abs($0.count - misspelling.count) < 2
   }
+  
+  guard !candidates.isEmpty else { return nil }
+  
+  print("🤔:", misspelling.description)
 
   for keyword in candidates {
-    if let distance = _misspelling.distance2(to: keyword.description, threshold: match.distance), distance < match.distance {
+    if let distance = misspelling.distance(to: keyword, threshold: match.distance), distance < match.distance {
       match.keyword = keyword
       match.distance = distance
       if distance == 1 {
@@ -72,10 +82,11 @@ fileprivate func keyword(for misspelling: SyntaxText, candidates: [SyntaxText]) 
     }
   }
 
-  if let keyword = match.keyword {
-    let score = 1 - Double(match.distance) / Double(max(_misspelling.count, keyword.count))
-    if score >= 0.5 {
-      return Keyword(keyword)!
+  if let keyword = match.keyword, match.distance < 3 {
+    let score = 1 - Double(match.distance) / Double(max(misspelling.count, keyword.count))
+    let threshold = keyword.count > 2 ? 0.6 : 0.5
+    if score >= threshold {
+      return Keyword(keyword)
     }
   }
 
@@ -83,30 +94,14 @@ fileprivate func keyword(for misspelling: SyntaxText, candidates: [SyntaxText]) 
 
 }
 
-extension String {
-
-  func similarity(to other: String) -> Double {
-    if let distance = self.distance2(to: other) {
-      return 1 - Double(distance) / Double(max(self.count, other.count))
-    }
-    return 0.0
-  }
-
-  func distance2(to other: String, threshold: Int? = nil) -> Int? {
+extension SyntaxText {
+  
+  func distance(to other: SyntaxText, threshold: Int? = nil) -> Int? {
 
     let selfLength = self.count
     let otherLength = other.count
-      
-      var commonPrefixLength = 0
-      for (char1, char2) in zip(self, other) {
-          if char1 == char2 {
-              commonPrefixLength += 1
-          } else {
-              break
-          }
-      }
-
-    var da: [Character: Int] = [:]
+    
+    var da: [UInt8: Int] = [:]
 
     var d = Array(repeating: Array(repeating: 0, count: otherLength + 2), count: selfLength + 2)
 
@@ -128,13 +123,16 @@ extension String {
       var db = 1
 
       for j in 2...otherLength + 1 {
-        let k = da[other[j - 2]!] ?? 1
+        let k = da[other[j - 2]] ?? 1
         let l = db
 
-        var cost = 1
+        var cost: Int
+        
         if self[i - 2] == other[j - 2] {
           cost = 0
           db = j
+        } else {
+          cost = 1
         }
 
         let substition = d[i - 1][j - 1] + cost
@@ -150,34 +148,12 @@ extension String {
         )
       }
 
-      da[self[i - 2]!] = i
+      da[self[i - 2]] = i
     }
 
     return d[selfLength + 1][otherLength + 1]
   }
-
-}
-
-extension String {
-  func index(_ i: Int) -> String.Index {
-    if i >= 0 {
-      return self.index(self.startIndex, offsetBy: i)
-    } else {
-      return self.index(self.endIndex, offsetBy: i)
-    }
-  }
-
-  subscript(i: Int) -> Character? {
-    if i >= count || i < -count {
-      return nil
-    }
-
-    return self[index(i)]
-  }
-
-  subscript(r: Range<Int>) -> String {
-    return String(self[index(r.lowerBound)..<index(r.upperBound)])
-  }
+  
 }
 
 /// Pre-computes the keyword a lexeme might represent. This makes matching
@@ -200,29 +176,50 @@ struct PrepareForKeywordMatch {
     case .keyword:
       keyword = Keyword(lexeme.tokenText)
     case .identifier:
-      if case .misspelled(let keywords) = match, let next, lexeme.diagnostic == nil {
-        func buildKeyword() -> Keyword? {
-          if lexeme.trailingTriviaText.isEmpty {
-            return Keyword(lexeme.tokenText)
-          }
-          if lexeme.cursor.is(offset: lexeme.leadingTriviaByteLength, at: "$") {
-            return Keyword(lexeme.tokenText)
-          }
-          let excluded: Set<SyntaxText> = ["(", ")", "{", "}", "<", ">", ".", ":", "=", "==", "!=", "?", "!", "??"]
-          if excluded.contains(next.tokenText) || next.rawTokenKind == .endOfFile {
-            return Keyword(lexeme.tokenText)
-          }
-          return Keyword(misspelling: lexeme.tokenText, keywords: keywords)
-        }
-        keyword = buildKeyword()
+      
+      if case .misspelled(let keywords) = match, !keywords.isEmpty,  let next, lexeme.diagnostic == nil, tokenIsPossibleMisspelling(lexeme, next: next) {
+        keyword = Keyword(misspelling: lexeme.tokenText, keywords: keywords)
       } else {
         keyword = Keyword(lexeme.tokenText)
       }
     default:
       keyword = nil
     }
+    
     self.isAtStartOfLine = lexeme.isAtStartOfLine
   }
+}
+
+func tokenIsPossibleMisspelling(_ lexeme: Lexer.Lexeme, next: Lexer.Lexeme) -> Bool {
+  
+  if !next.isAtStartOfLine && lexeme.trailingTriviaText.isEmpty {
+    return false
+  }
+  if lexeme.cursor.is(offset: lexeme.leadingTriviaByteLength, at: "$", "#") {
+    return false
+  }
+  
+  Keyword.sourceFile
+  
+  let excludedPreviousTokenKinds: Set<RawTokenKind> = [.period, .comma, .equal]
+
+  if let previousTokenKind = lexeme.cursor.previousTokenKind, excludedPreviousTokenKinds.contains(previousTokenKind) {
+    return false
+  }
+  
+  let excludedNextTokenKinds: Set<RawTokenKind> = [.leftParen, .rightAngle, .leftBrace, .rightBrace, .leftAngle, .rightAngle, .leftSquare, .rightSquare, .period, .colon, .equal, .infixQuestionMark,.postfixQuestionMark, .exclamationMark, .binaryOperator, .endOfFile]
+  
+  if excludedNextTokenKinds.contains(next.rawTokenKind) {
+    return false
+  }
+  
+  let excludedNextKeywords: Set<Keyword> = [.as, .is, .else, .where, .throws, .rethrows, .async]
+  
+  if next.isLexerClassifiedKeyword, excludedNextKeywords.contains(Keyword(next.tokenText)!) {
+    return false
+  }
+  
+  return true
 }
 
 /// Describes a token that should be consumed by the parser.
@@ -319,15 +316,13 @@ public struct TokenSpec {
   @inline(__always)
   static func ~= (kind: TokenSpec, lexeme: Lexer.Lexeme) -> Bool {
     let keyword: Keyword? =
-      if case let .misspelledKeyword(k) = lexeme.diagnostic?.kind {
-        k
+      if case let .misspelledKeyword(keyword) = lexeme.diagnostic?.kind {
+        keyword
       } else {
         Keyword(lexeme.tokenText)
       }
     return kind.matches(
       rawTokenKind: lexeme.rawTokenKind,
-      //      keyword: kind.rawTokenKind == .keyword && (lexeme.rawTokenKind == .keyword) ? Keyword(misspelling: lexeme.tokenText, keyword: kind.keyword) : Keyword(lexeme.tokenText),
-      //      keyword: Keyword(lexeme.tokenText),
       keyword: keyword,
       atStartOfLine: lexeme.isAtStartOfLine
     )
@@ -403,20 +398,21 @@ extension TokenConsumer {
   /// `eat`. Introduce new users of this very sparingly.
   @inline(__always)
   mutating func eat(_ spec: TokenSpec) -> Token {
-    precondition(spec ~= self.currentToken)
+    
+    if case let .keyword(keyword) = spec.synthesizedTokenKind,
+        currentToken.tokenText != keyword.defaultText,
+        Keyword(misspelling: currentToken.tokenText, keyword: keyword) == keyword {
+        let diagnostic = TokenDiagnostic(
+          .misspelledKeyword(keyword),
+          byteOffset: currentToken.leadingTriviaByteLength + currentToken.tokenText.count
+        )
+      self.addDiagnosticToCurrentToken(diagnostic)
+    } else {
+      precondition(spec ~= self.currentToken)
+    }
     if let remapping = spec.remapping {
       return self.consumeAnyToken(remapping: remapping)
     } else if spec.rawTokenKind == .keyword {
-      //        if let defaultText = spec.keyword?.defaultText, defaultText != self.currentToken.tokenText {
-      //            let keyword = Keyword(misspelling: self.currentToken.tokenText, keywords: [defaultText])
-      //            if let keyword, keyword == spec.keyword {
-      //                let diagnostic = self.currentToken.diagnostic
-      //                self.currentToken.diagnostic = TokenDiagnostic(
-      //                    combining: diagnostic,
-      //                    TokenDiagnostic(.misspelledKeyword(keyword), byteOffset: self.currentToken.trailingTriviaByteLength)
-      //                )
-      //            }
-      //        }
       return self.consumeAnyToken(remapping: .keyword)
     } else {
       return self.consumeAnyToken()
