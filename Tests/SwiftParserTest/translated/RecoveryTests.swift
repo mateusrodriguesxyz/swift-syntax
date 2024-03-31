@@ -18,7 +18,6 @@ import XCTest
 
 final class RecoveryTests: ParserTestCase {
   func testRecovery4() {
-    XCTExpectFailure()
     assertParse(
       #"""
       func garbage() -> () {

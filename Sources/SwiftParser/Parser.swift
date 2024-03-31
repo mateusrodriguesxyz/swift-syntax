@@ -474,7 +474,7 @@ extension Parser {
 
     return RawUnexpectedNodesSyntax(unexpectedTokens, arena: self.arena)
   }
-  
+
   mutating func addDiagnosticToCurrentToken(_ diagnostic: TokenDiagnostic) {
     currentToken.diagnostic = TokenDiagnostic(combining: currentToken.diagnostic, diagnostic)
   }

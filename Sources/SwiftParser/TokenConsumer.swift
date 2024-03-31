@@ -59,7 +59,7 @@ protocol TokenConsumer {
   /// is interested in.
   mutating func recordAlternativeTokenChoice(for lexeme: Lexer.Lexeme, choices: [TokenSpec])
   #endif
-  
+
   mutating func addDiagnosticToCurrentToken(_ diagnostic: TokenDiagnostic)
 }
 
@@ -77,6 +77,21 @@ struct TokenConsumptionHandle {
 }
 
 extension TokenConsumer {
+  mutating func addMisspelledKeywordDiagnosticToCurrentToken(_ keyword: Keyword) {
+    
+    if currentToken.tokenText != keyword.defaultText,
+      parseMisspelledKeyword(currentToken, next: peek(), keywords: [keyword.defaultText]) == keyword
+    {
+      let diagnostic = TokenDiagnostic(
+        .misspelledKeyword(keyword),
+        byteOffset: currentToken.leadingTriviaByteLength + currentToken.tokenText.count
+      )
+      self.addDiagnosticToCurrentToken(diagnostic)
+    }
+  }
+}
+
+extension TokenConsumer {
   /// Returns whether the current token matches `spec`
   @inline(__always)
   mutating func at(_ spec: TokenSpec) -> Bool {
@@ -85,15 +100,8 @@ extension TokenConsumer {
       recordAlternativeTokenChoice(for: self.currentToken, choices: [spec])
     }
     #endif
-    if case let .keyword(keyword) = spec.synthesizedTokenKind,
-        currentToken.tokenText != keyword.defaultText,
-        tokenIsPossibleMisspelling(currentToken, next: peek()),
-        Keyword(misspelling: currentToken.tokenText, keyword: keyword) == keyword {
-        let diagnostic = TokenDiagnostic(
-          .misspelledKeyword(keyword),
-          byteOffset: currentToken.leadingTriviaByteLength + currentToken.tokenText.count
-        )
-      self.addDiagnosticToCurrentToken(diagnostic)
+    if case let .keyword(keyword) = spec.synthesizedTokenKind, currentToken.tokenText != keyword.defaultText {
+      self.addMisspelledKeywordDiagnosticToCurrentToken(keyword)
     }
     return spec ~= self.currentToken
   }
@@ -159,6 +167,11 @@ extension TokenConsumer {
       next: self.peek(),
       experimentalFeatures: self.experimentalFeatures
     ) {
+      if case let .keyword(keyword) = matchedKind.spec.synthesizedTokenKind,
+        currentToken.tokenText != keyword.defaultText
+      {
+        self.addMisspelledKeywordDiagnosticToCurrentToken(keyword)
+      }
       // TODO: Disabled until figure out how to handle misspelled keywords here
       //      precondition(matchedKind.spec ~= self.currentToken)
       return (

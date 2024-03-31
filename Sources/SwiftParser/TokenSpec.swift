@@ -17,7 +17,7 @@
 #endif
 
 extension Keyword {
-  
+
   @_spi(RawSyntax)
   public enum Match {
     case exactly
@@ -26,23 +26,24 @@ extension Keyword {
     static func misspelled<T: TokenSpecSet>(_: T.Type) -> Self where T: RawRepresentable, T.RawValue == SyntaxText {
       return .misspelled(T.allCases.map(\.rawValue))
     }
+
+    static func misspelled(_ keywords: [Keyword]) -> Self {
+      return .misspelled(keywords.map(\.defaultText))
+    }
   }
 
   @_spi(RawSyntax)
   public init?(misspelling: SyntaxText, keywords: [SyntaxText] = []) {
-    
-
     if let keyword = Keyword(misspelling) {
       self = keyword
       return
     }
-    
-    let excludedKeywords: Set<Keyword> = [.`init`, .`deinit`, .repeat]
-    
+    // Some keywords are excluded because they are followed by `(` or `{`,
+    // which are banned next token kinds in `tokenIsPossibleMisspelledKeyword()`
+    let excludedKeywords: Set<Keyword> = [.`init`, .`deinit`, .do, .repeat]
     let keywords = keywords.filter {
       !excludedKeywords.map(\.defaultText).contains($0)
     }
-    
     if let _keyword = keyword(for: misspelling, candidates: keywords) {
       self = _keyword
     } else {
@@ -55,52 +56,43 @@ extension Keyword {
     guard let keyword else { return nil }
     self.init(misspelling: misspelling, keywords: [keyword.defaultText])
   }
-
 }
 
 fileprivate func keyword(for misspelling: SyntaxText, candidates: [SyntaxText]) -> Keyword? {
-
-  guard misspelling.count > 1 else { return nil }
-  
   var match: (keyword: SyntaxText?, distance: Int) = (nil, .max)
-
+  // A possible misspelling is only matched against keywords which length diff is 2 or less characters
   let candidates = candidates.filter {
     abs($0.count - misspelling.count) < 2
   }
-  
-  guard !candidates.isEmpty else { return nil }
-  
-  print("🤔:", misspelling.description)
-
   for keyword in candidates {
     if let distance = misspelling.distance(to: keyword, threshold: match.distance), distance < match.distance {
       match.keyword = keyword
       match.distance = distance
+      // If distance is 1 there's not a better match ahead.
       if distance == 1 {
         break
       }
     }
   }
-
-  if let keyword = match.keyword, match.distance < 3 {
+  // // Distance threshold is 3 to prevent longer keywords with too many misspellings.
+  if let keyword = match.keyword, match.distance < 2 {
     let score = 1 - Double(match.distance) / Double(max(misspelling.count, keyword.count))
-    let threshold = keyword.count > 2 ? 0.6 : 0.5
+    // Similarity threshold is 50% if keyword has 2 character and 60% otherwise.
+    let threshold = keyword.count == 2 ? 0.5 : 0.6
     if score >= threshold {
       return Keyword(keyword)
     }
   }
-
   return nil
-
 }
 
 extension SyntaxText {
-  
+  // Damerau–Levenshtein distance: https://en.wikipedia.org/wiki/Damerau–Levenshtein_distance
   func distance(to other: SyntaxText, threshold: Int? = nil) -> Int? {
 
     let selfLength = self.count
     let otherLength = other.count
-    
+
     var da: [UInt8: Int] = [:]
 
     var d = Array(repeating: Array(repeating: 0, count: otherLength + 2), count: selfLength + 2)
@@ -127,7 +119,7 @@ extension SyntaxText {
         let l = db
 
         var cost: Int
-        
+
         if self[i - 2] == other[j - 2] {
           cost = 0
           db = j
@@ -153,7 +145,6 @@ extension SyntaxText {
 
     return d[selfLength + 1][otherLength + 1]
   }
-  
 }
 
 /// Pre-computes the keyword a lexeme might represent. This makes matching
@@ -176,50 +167,100 @@ struct PrepareForKeywordMatch {
     case .keyword:
       keyword = Keyword(lexeme.tokenText)
     case .identifier:
-      
-      if case .misspelled(let keywords) = match, !keywords.isEmpty,  let next, lexeme.diagnostic == nil, tokenIsPossibleMisspelling(lexeme, next: next) {
-        keyword = Keyword(misspelling: lexeme.tokenText, keywords: keywords)
+      if case .misspelled(let keywords) = match, !keywords.isEmpty, let next,
+        let keyword = parseMisspelledKeyword(lexeme, next: next, keywords: keywords)
+      {
+        self.keyword = keyword
       } else {
         keyword = Keyword(lexeme.tokenText)
       }
     default:
       keyword = nil
     }
-    
+
     self.isAtStartOfLine = lexeme.isAtStartOfLine
   }
 }
 
-func tokenIsPossibleMisspelling(_ lexeme: Lexer.Lexeme, next: Lexer.Lexeme) -> Bool {
-  
-  if !next.isAtStartOfLine && lexeme.trailingTriviaText.isEmpty {
-    return false
-  }
-  if lexeme.cursor.is(offset: lexeme.leadingTriviaByteLength, at: "$", "#") {
-    return false
-  }
-  
-  Keyword.sourceFile
-  
-  let excludedPreviousTokenKinds: Set<RawTokenKind> = [.period, .comma, .equal]
+func parseMisspelledKeyword(_ lexeme: Lexer.Lexeme, next: Lexer.Lexeme, keywords: [SyntaxText]) -> Keyword? {
+  guard tokenIsPossibleMisspelledKeyword(lexeme, next: next) else { return nil }
+  guard let keyword = Keyword(misspelling: lexeme.tokenText, keywords: keywords) else { return nil }
+  guard validate(keyword: keyword, lexeme: lexeme, next: next) else { return nil }
+  return keyword
+}
 
+/// Checks whether a lexeme is a possible misspelled keyword ensuring that a lexeme that is very likely not intended to be a keyword is not false parsed as one.
+fileprivate func tokenIsPossibleMisspelledKeyword(_ lexeme: Lexer.Lexeme, next: Lexer.Lexeme) -> Bool {
+  // Keyword should have at least 1 character
+  guard lexeme.tokenText.count > 1 else {
+    return false
+  }
+  // If keyword is not `:` or at end of line it should have a trailing space
+  if next.rawTokenKind != .colon, lexeme.cursor.previousTokenKind != .period, !next.isAtStartOfLine,
+    lexeme.trailingTriviaText.isEmpty
+  {
+    return false
+  }
+  // If lexeme first character is `$`, `#`or `_` is not a keyword
+  if lexeme.cursor.is(offset: lexeme.leadingTriviaByteLength, at: "$", "#", "_") {
+    return false
+  }
+  // Keywords are not usually preceded by `.`, `,` or `=`
+  // Exceptions are `self` (e.g: T.self) and `if` or `switch` as expressions (e.g. = if CONDITION { } else { })
+  let excludedPreviousTokenKinds: Set<RawTokenKind> = [.comma]
   if let previousTokenKind = lexeme.cursor.previousTokenKind, excludedPreviousTokenKinds.contains(previousTokenKind) {
     return false
   }
-  
-  let excludedNextTokenKinds: Set<RawTokenKind> = [.leftParen, .rightAngle, .leftBrace, .rightBrace, .leftAngle, .rightAngle, .leftSquare, .rightSquare, .period, .colon, .equal, .infixQuestionMark,.postfixQuestionMark, .exclamationMark, .binaryOperator, .endOfFile]
-  
+  // Keywords are not usually followed by the following token kinds
+  let excludedNextTokenKinds: Set<RawTokenKind> = [
+    .leftParen, .rightAngle, /*.leftBrace,*/ /*.rightBrace, */ .leftAngle, .rightAngle, .leftSquare, .rightSquare,
+    .equal,
+    .period, /*.colon,*/ .infixQuestionMark, .postfixQuestionMark, .exclamationMark, .binaryOperator, .endOfFile,
+  ]
   if excludedNextTokenKinds.contains(next.rawTokenKind) {
     return false
   }
-  
-  let excludedNextKeywords: Set<Keyword> = [.as, .is, .else, .where, .throws, .rethrows, .async]
-  
+  // Keywords are not usually followed by the following keywords
+  let excludedNextKeywords: Set<Keyword> = [.as, .is, .else, .where, .async, .throws, .rethrows]
   if next.isLexerClassifiedKeyword, excludedNextKeywords.contains(Keyword(next.tokenText)!) {
     return false
   }
-  
   return true
+}
+
+fileprivate func validate(keyword: Keyword, lexeme: Lexer.Lexeme, next: Lexer.Lexeme) -> Bool {
+  func validatePreviousToken() -> Bool {
+    switch lexeme.cursor.previousTokenKind {
+    case .equal:
+      // A misspelled keyword preceded by `=` is only acceptable if it's modifier
+      let modifiers: Set<Keyword> = [.try, .await, .consume]
+      return modifiers.contains(keyword)
+    case .period:
+      // A misspelled keyword preceded by `.` is only acceptable if it's `self`
+      return keyword == .`self`
+    default:
+      return true
+    }
+  }
+
+  func validateNextToken() -> Bool {
+    switch next.rawTokenKind {
+    // A misspelled keyword followed by `}` is only acceptable if it's a control transfer statement at start of line or preceded by `:`.
+    case .rightBrace:
+      let statements: Set<Keyword> = [.return, .break, .continue, .fallthrough]
+      return statements.contains(keyword) && (lexeme.isAtStartOfLine || lexeme.cursor.previousTokenKind == .colon)
+    // A misspelled keyword followed by `:` is only acceptable if it's a `default` at start of line.
+    case .colon:
+      return keyword == .default && lexeme.isAtStartOfLine
+    case .leftBrace:
+      let acceptables: Set<Keyword> = [.async, .throws, .didSet, .willSet]
+      return acceptables.contains(keyword)
+    default:
+      return true
+    }
+  }
+
+  return validatePreviousToken() && validateNextToken()
 }
 
 /// Describes a token that should be consumed by the parser.
@@ -398,18 +439,10 @@ extension TokenConsumer {
   /// `eat`. Introduce new users of this very sparingly.
   @inline(__always)
   mutating func eat(_ spec: TokenSpec) -> Token {
-    
-    if case let .keyword(keyword) = spec.synthesizedTokenKind,
-        currentToken.tokenText != keyword.defaultText,
-        Keyword(misspelling: currentToken.tokenText, keyword: keyword) == keyword {
-        let diagnostic = TokenDiagnostic(
-          .misspelledKeyword(keyword),
-          byteOffset: currentToken.leadingTriviaByteLength + currentToken.tokenText.count
-        )
-      self.addDiagnosticToCurrentToken(diagnostic)
-    } else {
-      precondition(spec ~= self.currentToken)
+    if case let .keyword(keyword) = spec.synthesizedTokenKind, currentToken.tokenText != keyword.defaultText {
+      self.addMisspelledKeywordDiagnosticToCurrentToken(keyword)
     }
+    //    precondition(spec ~= self.currentToken)
     if let remapping = spec.remapping {
       return self.consumeAnyToken(remapping: remapping)
     } else if spec.rawTokenKind == .keyword {

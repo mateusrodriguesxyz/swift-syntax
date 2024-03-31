@@ -41,7 +41,7 @@ extension TokenSpecSet {
 enum EitherTokenSpecSet<LHS: TokenSpecSet, RHS: TokenSpecSet>: TokenSpecSet {
   case lhs(LHS)
   case rhs(RHS)
-  
+
   init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
     if let x = LHS(lexeme: lexeme, next: next, experimentalFeatures: experimentalFeatures) {
       self = .lhs(x)
@@ -71,15 +71,15 @@ enum EitherTokenSpecSet<LHS: TokenSpecSet, RHS: TokenSpecSet>: TokenSpecSet {
 
 // MARK: - Subsets
 
-enum AccessorModifier: SyntaxText,TokenSpecSet {
+enum AccessorModifier: TokenSpecSet {
   case __consuming
   case consuming
   case borrowing
   case mutating
   case nonmutating
 
-  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
+  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme) {
     case TokenSpec(.__consuming): self = .__consuming
     case TokenSpec(.consuming): self = .consuming
     case TokenSpec(.borrowing): self = .borrowing
@@ -118,8 +118,12 @@ enum CanBeStatementStart: SyntaxText, TokenSpecSet {
   case `while`
   case yield
 
+  private static let misspellables: [Keyword] = [
+    .break, .continue, .fallthrough, .for, .guard, .if, .return, .switch, .throw, .while,
+  ]
+
   init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.misspellables)) {
     case TokenSpec(.break): self = .break
     case TokenSpec(.continue): self = .continue
     case TokenSpec(.defer): self = .defer
@@ -219,7 +223,7 @@ enum ContextualDeclKeyword: SyntaxText, TokenSpecSet {
   case weak
 
   init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .exactly) {
     case TokenSpec(.__consuming): self = .__consuming
     case TokenSpec(._compilerInitialized): self = ._compilerInitialized
     case TokenSpec(._const): self = ._const
@@ -305,9 +309,14 @@ enum PureDeclarationKeyword: SyntaxText, TokenSpecSet {
   case `subscript`
   case `typealias`
   case pound
-  
+
+  private static let mispellables: [Keyword] = [
+    .actor, .associatedtype, .case, .class, .enum, .extension, .func, .macro, .protocol, .struct, .typealias,
+    // NOTE: `init`, `deinit` and `subscript` were excluded because they are followed by `(` or `{`
+  ]
+
   init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.mispellables)) {
     case TokenSpec(.actor): self = .actor
     case TokenSpec(.macro): self = .macro
     case TokenSpec(.associatedtype): self = .associatedtype
@@ -322,14 +331,15 @@ enum PureDeclarationKeyword: SyntaxText, TokenSpecSet {
     case TokenSpec(.operator): self = .operator
     case TokenSpec(.precedencegroup): self = .precedencegroup
     case TokenSpec(.protocol): self = .protocol
-    case TokenSpec(.struct): self = .struct
+    case TokenSpec(.struct):
+      self = .struct
     case TokenSpec(.subscript): self = .subscript
     case TokenSpec(.typealias): self = .typealias
     case TokenSpec(.pound): self = .pound
     default: return nil
     }
   }
-  
+
   var spec: TokenSpec {
     switch self {
     case .actor: return TokenSpec(.actor, recoveryPrecedence: .declKeyword)
@@ -399,8 +409,13 @@ enum DeclarationModifier: SyntaxText, TokenSpecSet {
   case _resultDependsOn
   case _resultDependsOnSelf
 
+  private static let mispellables: [Keyword] = [
+    .class, .convenience, .fileprivate, .final, .indirect, .isolated, .lazy, .mutating, .nonisolated, .nonmutating,
+    .open, .override, .package, .private, .public, .required, .static, .unowned, .weak,
+  ]
+
   init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.mispellables)) {
     case TokenSpec(.__consuming): self = .__consuming
     case TokenSpec(.__setter_access): self = .__setter_access
     case TokenSpec(._const): self = ._const
@@ -495,10 +510,10 @@ enum DeclarationStart: TokenSpecSet {
   case declarationModifier(DeclarationModifier)
   case declarationKeyword(DeclarationKeyword)
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    if let subset = DeclarationModifier(lexeme: lexeme, experimentalFeatures: experimentalFeatures) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    if let subset = DeclarationModifier(lexeme: lexeme, next: next, experimentalFeatures: experimentalFeatures) {
       self = .declarationModifier(subset)
-    } else if let subset = DeclarationKeyword(lexeme: lexeme, experimentalFeatures: experimentalFeatures) {
+    } else if let subset = DeclarationKeyword(lexeme: lexeme, next: next, experimentalFeatures: experimentalFeatures) {
       self = .declarationKeyword(subset)
     } else {
       return nil
@@ -722,8 +737,12 @@ enum ExpressionModifierKeyword: SyntaxText, TokenSpecSet {
   case each
   case any
 
+  private static let mispellables: [Keyword] = [
+    .await, .try, .consume, .each,
+  ]
+
   init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.self)) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.mispellables)) {
     case TokenSpec(.await): self = .await
     case TokenSpec(._move): self = ._move
     case TokenSpec(._borrow): self = ._borrow
@@ -1020,4 +1039,37 @@ enum EffectSpecifiers: SyntaxText, TokenSpecSet {
     case .try: return TokenSpec(.try, allowAtStartOfLine: false)
     }
   }
+}
+
+extension SimpleTypeSpecifierSyntax.SpecifierOptions {
+
+  private static let misspellables: [Keyword] = [
+    .inout, .isolated, .borrowing, .consuming,
+  ]
+
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled(Self.misspellables)) {
+    case TokenSpec(.inout):
+      self = .inout
+    case TokenSpec(.__shared):
+      self = .__shared
+    case TokenSpec(.__owned):
+      self = .__owned
+    case TokenSpec(.isolated):
+      self = .isolated
+    case TokenSpec(._const):
+      self = ._const
+    case TokenSpec(.borrowing):
+      self = .borrowing
+    case TokenSpec(.consuming):
+      self = .consuming
+    case TokenSpec(.transferring) where experimentalFeatures.contains(.transferringArgsAndResults):
+      self = .transferring
+    case TokenSpec(._resultDependsOn) where experimentalFeatures.contains(.nonescapableTypes):
+      self = ._resultDependsOn
+    default:
+      return nil
+    }
+  }
+
 }

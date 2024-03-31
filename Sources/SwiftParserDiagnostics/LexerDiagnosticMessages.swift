@@ -331,11 +331,19 @@ public extension SwiftSyntax.TokenDiagnostic {
     case .misspelledKeyword:
       var changes: [FixIt.Change] = []
       let oldNode = Syntax(token)
-      let newNode = Syntax(TokenSyntax(token.tokenKind, leadingTrivia: oldNode.leadingTrivia,  trailingTrivia: oldNode.trailingTrivia, presence: .present))
+      let newNode = Syntax(
+        TokenSyntax(
+          token.tokenKind,
+          leadingTrivia: oldNode.leadingTrivia,
+          trailingTrivia: oldNode.trailingTrivia,
+          presence: .present
+        )
+      )
       changes.append(.replace(oldNode: oldNode, newNode: newNode))
-      let misspelling = String(token.description
-        .dropFirst(token.leadingTriviaLength.utf8Length)
-        .dropLast(token.trailingTriviaLength.utf8Length)
+      let misspelling = String(
+        token.description
+          .dropFirst(token.leadingTriviaLength.utf8Length)
+          .dropLast(token.trailingTriviaLength.utf8Length)
       )
       let message = ReplaceMisspelledKeywordFixIt(
         misspelling: misspelling,
