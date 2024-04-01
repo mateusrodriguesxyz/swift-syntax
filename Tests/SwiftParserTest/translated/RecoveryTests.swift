@@ -12,6 +12,7 @@
 
 // This test file has been translated from swift/test/Parse/recovery.swift
 
+import SwiftParser
 import SwiftSyntax
 import XCTest
 

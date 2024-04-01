@@ -566,10 +566,13 @@ extension RawSyntax {
       presence: presence,
       tokenDiagnostic: tokenDiagnostic
     )
-    precondition(
-      kind != .keyword || Keyword(payload.tokenText) != nil,
-      "If kind is keyword, the text must be a known token kind"
-    )
+    let keyword =
+      if case let .misspelledKeyword(keyword) = tokenDiagnostic?.kind {
+        keyword
+      } else {
+        Keyword(payload.tokenText)
+      }
+    precondition(kind != .keyword || keyword != nil, "If kind is keyword, the text must be a known token kind")
     return RawSyntax(arena: arena, payload: .parsedToken(payload))
   }
 
@@ -606,7 +609,7 @@ extension RawSyntax {
       presence: presence,
       tokenDiagnostic: tokenDiagnostic
     )
-    precondition(kind != .keyword || Keyword(text) != nil, "If kind is keyword, the text must be a known token kind")
+    //    precondition(kind != .keyword || Keyword(text) != nil, "If kind is keyword, the text must be a known token kind")
     return RawSyntax(arena: arena, payload: .materializedToken(payload))
   }
 

@@ -475,6 +475,10 @@ extension Parser {
     return RawUnexpectedNodesSyntax(unexpectedTokens, arena: self.arena)
   }
 
+  mutating func addDiagnosticToCurrentToken(_ diagnostic: TokenDiagnostic) {
+    currentToken.diagnostic = TokenDiagnostic(combining: currentToken.diagnostic, diagnostic)
+  }
+
 }
 
 // MARK: Check if we can recover to a token
@@ -521,6 +525,7 @@ extension Parser {
     } else {
       unexpectedNodes = nil
     }
+    //    self.currentToken.diagnostic = nil
     let token = self.eat(handle.tokenConsumptionHandle)
     return (unexpectedNodes, token)
   }
