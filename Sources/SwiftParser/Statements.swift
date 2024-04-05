@@ -1080,14 +1080,6 @@ extension Parser.Lookahead {
     }
     if self.atStartOfLine {
       // If the current token is at the start of a line, it is most likely a statement body. The only exceptions are:
-      if self.at(.leftBrace) && withLookahead({ $0.atStartOfConditionalStatementBody() }) {
-        // If a statement body starts after this on, we actually have a closure followed by the statement body e.g.
-        // if true, { true }
-        // {
-        //   print("body")
-        // }
-        return false
-      }
       if self.at(.comma) {
         // If newline begins with ',' it must be a condition trailing comma, so this can't be the statement body, e.g.
         // if true, { true }

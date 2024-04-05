@@ -137,10 +137,9 @@ final class TrailingCommaTests: ParserTestCase {
       """,
       substructure: IfExprSyntax(
         conditions: [
-          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken()),
-          ConditionElementSyntax.init(condition: .expression("{ true }"), trailingComma: nil),
+          ConditionElementSyntax.init(condition: .expression("true"), trailingComma: .commaToken())
         ],
-        body: "{ print(0) }"
+        body: "{ true }"
       )
     )
 
