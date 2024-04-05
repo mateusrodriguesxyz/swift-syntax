@@ -9,7 +9,12 @@
 // See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 //
 //===----------------------------------------------------------------------===//
+
+#if swift(>=6)
+public import SwiftSyntax
+#else
 import SwiftSyntax
+#endif
 
 public struct GroupedDiagnostics {
   /// A unique identifier for a source file.
@@ -180,7 +185,7 @@ extension GroupedDiagnostics {
     let slc = sourceFile.sourceLocationConverter
     let diagnosticDecorator = formatter.diagnosticDecorator
 
-    let childPadding = String(slc.sourceLines.count + 1).count + 1;
+    let childPadding = String(slc.sourceLines.count + 1).count + 1
 
     // Collect the child sources.
     var childSources: [AbsolutePosition: String] = [:]
@@ -188,7 +193,7 @@ extension GroupedDiagnostics {
       let childSource = annotateSource(
         childBufferID,
         formatter: formatter,
-        indentString: indentString + String(repeating: " ", count: childPadding) + "│"
+        indentString: indentString + String(repeating: " ", count: childPadding) + "|"
       )
 
       childSources[sourceFiles[childBufferID.id].parent!.1, default: ""].append(childSource)
@@ -223,8 +228,11 @@ extension GroupedDiagnostics {
 
           if rootSourceID == sourceFileID {
             let bufferLoc = slc.location(for: rootPosition)
-            let decoratedMessage = diagnosticDecorator.decorateMessage("expanded code originates here", basedOnSeverity: .note)
-            prefixString += "╰─ \(bufferLoc.file):\(bufferLoc.line):\(bufferLoc.column): \(decoratedMessage)\n"
+            let decoratedMessage = diagnosticDecorator.decorateMessage(
+              "expanded code originates here",
+              basedOnSeverity: .note
+            )
+            prefixString += "`- \(bufferLoc.file):\(bufferLoc.line):\(bufferLoc.column): \(decoratedMessage)\n"
           }
         }
       } else {
@@ -241,14 +249,17 @@ extension GroupedDiagnostics {
       let extraLengthNeeded = targetLineLength - padding.count - sourceFile.displayName.count - 6
       let boxSuffix: String
       if extraLengthNeeded > 0 {
-        boxSuffix = diagnosticDecorator.decorateBufferOutline(String(repeating: "─", count: extraLengthNeeded))
+        boxSuffix = diagnosticDecorator.decorateBufferOutline(String(repeating: "-", count: extraLengthNeeded))
       } else {
         boxSuffix = ""
       }
 
-      prefixString = diagnosticDecorator.decorateBufferOutline(padding + "╭─── ") + sourceFile.displayName + " " + boxSuffix + "\n"
+      prefixString =
+        diagnosticDecorator.decorateBufferOutline(padding + "+--- ") + sourceFile.displayName + " " + boxSuffix + "\n"
       suffixString =
-        diagnosticDecorator.decorateBufferOutline(padding + "╰───" + String(repeating: "─", count: sourceFile.displayName.count + 2)) + boxSuffix + "\n"
+        diagnosticDecorator.decorateBufferOutline(
+          padding + "+---" + String(repeating: "-", count: sourceFile.displayName.count + 2)
+        ) + boxSuffix + "\n"
     }
 
     // Render the buffer.

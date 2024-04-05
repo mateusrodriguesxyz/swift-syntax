@@ -10,8 +10,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+public import SwiftSyntax
+import SwiftSyntaxBuilder
+#else
 import SwiftSyntax
 import SwiftSyntaxBuilder
+#endif
 
 extension SyntaxProtocol {
   /// If this syntax node acts as a lexical context from the perspective
@@ -56,6 +61,11 @@ extension SyntaxProtocol {
       patternBinding.accessorBlock = nil
       patternBinding.initializer = nil
       return Syntax(patternBinding)
+
+    // Freestanding macros are fine as-is because if any arguments change
+    // the whole macro would have to be re-evaluated.
+    case let freestandingMacro as FreestandingMacroExpansionSyntax:
+      return Syntax(freestandingMacro.detached) as Syntax
 
     default:
       return nil

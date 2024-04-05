@@ -28,7 +28,7 @@ fileprivate extension String {
 private func assertNameMatcherResult(
   _ markedText: String,
   expected: [DeclNameLocationSpec],
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   let (markers, input) = extractMarkers(markedText)
@@ -58,7 +58,12 @@ private func assertNameMatcherResult(
     let actualArgumentLabels = argumentLabels.map { input[$0.range] }
     XCTAssertEqual(actualArgumentLabels, expected.arguments, file: file, line: expected.originatorLine)
 
-    XCTAssertEqual(DeclNameLocationSpec.ArgumentsType(actual.arguments), expected.type, file: file, line: expected.originatorLine)
+    XCTAssertEqual(
+      DeclNameLocationSpec.ArgumentsType(actual.arguments),
+      expected.type,
+      file: file,
+      line: expected.originatorLine
+    )
     XCTAssertEqual(actual.isActive, expected.isActive, file: file, line: expected.originatorLine)
     XCTAssertEqual(actual.context, expected.context, file: file, line: expected.originatorLine)
   }
@@ -122,7 +127,7 @@ private struct DeclNameLocationSpec {
   }
 }
 
-public class NameMatcherTests: XCTestCase {
+class NameMatcherTests: XCTestCase {
   func testMemberCall() {
     assertNameMatcherResult(
       "Foo.1️⃣first(associated: 1)",

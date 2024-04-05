@@ -10,12 +10,16 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Utility APIs to compare two difference syntax trees for structual
+// Utility APIs to compare two difference syntax trees for structural
 // equivalence.
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+public import SwiftSyntax
+#else
 import SwiftSyntax
+#endif
 
 public enum DifferenceReason {
   case nodeType, presence, missingNode, additionalNode, trivia, token
@@ -125,7 +129,10 @@ public extension SyntaxProtocol {
         if token.tokenKind != baselineToken.tokenKind {
           return .token
         }
-        if includeTrivia && (token.leadingTrivia != baselineToken.leadingTrivia || token.trailingTrivia != baselineToken.trailingTrivia) {
+        if includeTrivia
+          && (token.leadingTrivia != baselineToken.leadingTrivia
+            || token.trailingTrivia != baselineToken.trailingTrivia)
+        {
           return .trivia
         }
       }

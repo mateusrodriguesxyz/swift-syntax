@@ -19,7 +19,9 @@ import XCTest
 import _SwiftSyntaxTestSupport
 
 fileprivate let closurePlaceholder = wrapInPlaceholder("T##closure##() -> Void")
-fileprivate let closureWithArgPlaceholder = wrapInPlaceholder("T##(Int) -> String##(Int) -> String##(_ someInt: Int) -> String")
+fileprivate let closureWithArgPlaceholder = wrapInPlaceholder(
+  "T##(Int) -> String##(Int) -> String##(_ someInt: Int) -> String"
+)
 fileprivate let voidPlaceholder = wrapInPlaceholder("T##code##Void")
 fileprivate let intPlaceholder = wrapInPlaceholder("T##Int##Int")
 fileprivate let stringPlaceholder = wrapInPlaceholder("T##String##String")
@@ -193,7 +195,7 @@ final class ExpandEditorPlaceholderTests: XCTestCase {
       foo(arg: \(intPlaceholder), closure: \(closureWithArgPlaceholder))
       """,
       expected: """
-        foo(arg: \(intPlaceholder))  { someInt in
+        foo(arg: \(intPlaceholder)) { someInt in
             \(stringPlaceholder)
         }
         """
@@ -206,7 +208,7 @@ final class ExpandEditorPlaceholderTests: XCTestCase {
       foo(arg: \(intPlaceholder), firstClosure: \(closureWithArgPlaceholder), secondClosure: \(closureWithArgPlaceholder))
       """,
       expected: """
-        foo(arg: \(intPlaceholder))  { someInt in
+        foo(arg: \(intPlaceholder)) { someInt in
             \(stringPlaceholder)
         } secondClosure: { someInt in
             \(stringPlaceholder)
@@ -221,7 +223,99 @@ final class ExpandEditorPlaceholderTests: XCTestCase {
       foo(pre: \(closurePlaceholder), arg: \(intPlaceholder), closure: \(closureWithArgPlaceholder))
       """,
       expected: """
-        foo(pre: \(closurePlaceholder), arg: \(intPlaceholder))  { someInt in
+        foo(pre: \(closurePlaceholder), arg: \(intPlaceholder)) { someInt in
+            \(stringPlaceholder)
+        }
+        """
+    )
+  }
+
+  func testCallHasInitialIndentation() throws {
+    try assertExpandEditorPlaceholdersToTrailingClosures(
+      """
+          foo(arg: 1, closure: \(closureWithArgPlaceholder))
+      """,
+      expected: """
+            foo(arg: 1) { someInt in
+                \(stringPlaceholder)
+            }
+        """
+    )
+  }
+
+  func testCustomIndentationWidth() throws {
+    try assertExpandEditorPlaceholdersToTrailingClosures(
+      """
+      foo(arg: 1, closure: \(closureWithArgPlaceholder))
+      """,
+      expected: """
+        foo(arg: 1) { someInt in
+          \(stringPlaceholder)
+        }
+        """,
+      indentationWidth: .spaces(2)
+    )
+  }
+
+  func testCustomIndentationWidthWithInitialIndentation() throws {
+    try assertExpandEditorPlaceholdersToTrailingClosures(
+      """
+        foo(arg: 1, closure: \(closureWithArgPlaceholder))
+      """,
+      expected: """
+          foo(arg: 1) { someInt in
+            \(stringPlaceholder)
+          }
+        """,
+      indentationWidth: .spaces(2)
+    )
+  }
+
+  func testMultilineCall() throws {
+    try assertExpandEditorPlaceholdersToTrailingClosures(
+      """
+      foo(
+          arg: 1,
+          closure: \(closureWithArgPlaceholder)
+      )
+      """,
+      expected: """
+        foo(
+            arg: 1
+        ) { someInt in
+            \(stringPlaceholder)
+        }
+        """
+    )
+  }
+
+  func testMultilineIndentedCall() throws {
+    try assertExpandEditorPlaceholdersToTrailingClosures(
+      """
+          foo(
+              arg: 1,
+              closure: \(closureWithArgPlaceholder)
+          )
+      """,
+      expected: """
+            foo(
+                arg: 1
+            ) { someInt in
+                \(stringPlaceholder)
+            }
+        """
+    )
+  }
+
+  func testMultilineCallWithNoAdditionalArguments() throws {
+    try assertExpandEditorPlaceholdersToTrailingClosures(
+      """
+      foo(
+          closure: \(closureWithArgPlaceholder)
+      )
+      """,
+      expected: """
+        foo { someInt in
             \(stringPlaceholder)
         }
         """
@@ -233,7 +327,8 @@ fileprivate func assertRefactorPlaceholder(
   _ placeholder: String,
   wrap: Bool = true,
   expected: String,
-  file: StaticString = #file,
+  indentationWidth: Trivia? = nil,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws {
   let token: TokenSyntax
@@ -245,43 +340,69 @@ fileprivate func assertRefactorPlaceholder(
     token = try XCTUnwrap(expr.as(DeclReferenceExprSyntax.self)?.baseName, file: file, line: line)
   }
 
-  try assertRefactor(token, context: (), provider: ExpandEditorPlaceholder.self, expected: [SourceEdit.replace(token, with: expected)], file: file, line: line)
+  try assertRefactor(
+    token,
+    context: ExpandEditorPlaceholder.Context(indentationWidth: indentationWidth),
+    provider: ExpandEditorPlaceholder.self,
+    expected: [SourceEdit.replace(token, with: expected)],
+    file: file,
+    line: line
+  )
 }
 
 fileprivate func assertRefactorPlaceholderCall(
   _ expr: String,
   placeholder: Int = 0,
   expected: String,
-  file: StaticString = #file,
+  indentationWidth: Trivia? = nil,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws {
   var parser = Parser(expr)
   let call = try XCTUnwrap(ExprSyntax.parse(from: &parser).as(FunctionCallExprSyntax.self), file: file, line: line)
   let arg = call.arguments[call.arguments.index(at: placeholder)]
-  let token: TokenSyntax = try XCTUnwrap(arg.expression.as(DeclReferenceExprSyntax.self), file: file, line: line).baseName
+  let token: TokenSyntax = try XCTUnwrap(arg.expression.as(DeclReferenceExprSyntax.self), file: file, line: line)
+    .baseName
 
-  try assertRefactor(token, context: (), provider: ExpandEditorPlaceholder.self, expected: [SourceEdit.replace(call, with: expected)], file: file, line: line)
+  try assertRefactor(
+    token,
+    context: ExpandEditorPlaceholder.Context(indentationWidth: indentationWidth),
+    provider: ExpandEditorPlaceholder.self,
+    expected: [SourceEdit.replace(call, with: expected)],
+    file: file,
+    line: line
+  )
 }
 
 fileprivate func assertRefactorPlaceholderToken(
   _ expr: String,
   placeholder: Int = 0,
   expected: String,
-  file: StaticString = #file,
+  indentationWidth: Trivia? = nil,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws {
   var parser = Parser(expr)
   let call = try XCTUnwrap(ExprSyntax.parse(from: &parser).as(FunctionCallExprSyntax.self), file: file, line: line)
   let arg = call.arguments[call.arguments.index(at: placeholder)]
-  let token: TokenSyntax = try XCTUnwrap(arg.expression.as(DeclReferenceExprSyntax.self), file: file, line: line).baseName
+  let token: TokenSyntax = try XCTUnwrap(arg.expression.as(DeclReferenceExprSyntax.self), file: file, line: line)
+    .baseName
 
-  try assertRefactor(token, context: (), provider: ExpandEditorPlaceholder.self, expected: [SourceEdit.replace(token, with: expected)], file: file, line: line)
+  try assertRefactor(
+    token,
+    context: ExpandEditorPlaceholder.Context(indentationWidth: indentationWidth),
+    provider: ExpandEditorPlaceholder.self,
+    expected: [SourceEdit.replace(token, with: expected)],
+    file: file,
+    line: line
+  )
 }
 
 fileprivate func assertExpandEditorPlaceholdersToTrailingClosures(
   _ expr: String,
   expected: String,
-  file: StaticString = #file,
+  indentationWidth: Trivia? = nil,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) throws {
   var parser = Parser(expr)
@@ -289,7 +410,7 @@ fileprivate func assertExpandEditorPlaceholdersToTrailingClosures(
 
   try assertRefactor(
     call,
-    context: (),
+    context: ExpandEditorPlaceholdersToTrailingClosures.Context(indentationWidth: indentationWidth),
     provider: ExpandEditorPlaceholdersToTrailingClosures.self,
     expected: [SourceEdit.replace(call, with: expected)],
     file: file,

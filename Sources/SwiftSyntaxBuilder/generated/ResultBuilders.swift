@@ -12,7 +12,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-import SwiftSyntax
+#if swift(>=6)
+@_spi(ExperimentalLanguageFeatures) public import SwiftSyntax
+#else
+@_spi(ExperimentalLanguageFeatures) import SwiftSyntax
+#endif
 
 // MARK: - AccessorDeclListBuilder
 
@@ -425,6 +429,22 @@ public extension LabeledExprListSyntax {
   }
 }
 
+// MARK: - LifetimeSpecifierArgumentListBuilder
+
+#if compiler(>=5.8)
+@_spi(ExperimentalLanguageFeatures)
+#endif
+@resultBuilder
+public struct LifetimeSpecifierArgumentListBuilder: ListBuilder {
+  public typealias FinalResult = LifetimeSpecifierArgumentListSyntax
+}
+
+public extension LifetimeSpecifierArgumentListSyntax {
+  init(@LifetimeSpecifierArgumentListBuilder itemsBuilder: () throws -> LifetimeSpecifierArgumentListSyntax) rethrows {
+    self = try itemsBuilder()
+  }
+}
+
 // MARK: - MemberBlockItemListBuilder
 
 @resultBuilder
@@ -660,6 +680,30 @@ public struct TupleTypeElementListBuilder: ListBuilder {
 
 public extension TupleTypeElementListSyntax {
   init(@TupleTypeElementListBuilder itemsBuilder: () throws -> TupleTypeElementListSyntax) rethrows {
+    self = try itemsBuilder()
+  }
+}
+
+// MARK: - TypeSpecifierListBuilder
+
+@resultBuilder
+public struct TypeSpecifierListBuilder: ListBuilder {
+  public typealias FinalResult = TypeSpecifierListSyntax
+  
+  public static func buildExpression(_ expression: SimpleTypeSpecifierSyntax) -> Component {
+    buildExpression(.init(expression))
+  }
+  
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  public static func buildExpression(_ expression: LifetimeTypeSpecifierSyntax) -> Component {
+    buildExpression(.init(expression))
+  }
+}
+
+public extension TypeSpecifierListSyntax {
+  init(@TypeSpecifierListBuilder itemsBuilder: () throws -> TypeSpecifierListSyntax) rethrows {
     self = try itemsBuilder()
   }
 }

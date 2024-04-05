@@ -12,18 +12,18 @@
 // NOTE: This basic plugin mechanism is mostly copied from
 // https://github.com/apple/swift-package-manager/blob/main/Sources/PackagePlugin/Plugin.swift
 
-import SwiftSyntaxMacros
-
-#if swift(>=5.11)
+#if swift(>=6.0)
+public import SwiftSyntaxMacros
 private import Foundation
 private import SwiftCompilerPluginMessageHandling
 #else
+import SwiftSyntaxMacros
 import Foundation
 import SwiftCompilerPluginMessageHandling
 #endif
 
 #if os(Windows)
-#if swift(>=5.11)
+#if swift(>=6.0)
 private import ucrt
 #else
 import ucrt
@@ -87,7 +87,10 @@ extension CompilerPlugin {
     }
 
     let pluginPath = CommandLine.arguments.first ?? Bundle.main.executablePath ?? ProcessInfo.processInfo.processName
-    throw CompilerPluginError(message: "macro implementation type '\(moduleName).\(typeName)' could not be found in executable plugin '\(pluginPath)'")
+    throw CompilerPluginError(
+      message:
+        "macro implementation type '\(moduleName).\(typeName)' could not be found in executable plugin '\(pluginPath)'"
+    )
   }
 }
 

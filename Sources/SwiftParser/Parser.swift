@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+@_spi(RawSyntax) public import SwiftSyntax
+#else
 @_spi(RawSyntax) import SwiftSyntax
+#endif
 
 /// A parser for the Swift programming language.
 ///
@@ -141,9 +145,14 @@ public struct Parser {
   ///
   /// These empty collections are only created once and the same node is returned
   /// on subsequent calls, reducing memory usage.
-  mutating func emptyCollection(_: RawMultipleTrailingClosureElementListSyntax.Type) -> RawMultipleTrailingClosureElementListSyntax {
+  mutating func emptyCollection(
+    _: RawMultipleTrailingClosureElementListSyntax.Type
+  ) -> RawMultipleTrailingClosureElementListSyntax {
     if _emptyRawMultipleTrailingClosureElementListSyntax == nil {
-      _emptyRawMultipleTrailingClosureElementListSyntax = RawMultipleTrailingClosureElementListSyntax(elements: [], arena: self.arena)
+      _emptyRawMultipleTrailingClosureElementListSyntax = RawMultipleTrailingClosureElementListSyntax(
+        elements: [],
+        arena: self.arena
+      )
     }
     return _emptyRawMultipleTrailingClosureElementListSyntax!
   }
@@ -172,6 +181,19 @@ public struct Parser {
       _emptyRawAttributeListSyntax = RawAttributeListSyntax(elements: [], arena: self.arena)
     }
     return _emptyRawAttributeListSyntax!
+  }
+
+  var _emptyRawTypeSpecifierListSyntax: RawTypeSpecifierListSyntax?
+
+  /// Create an empty collection of the given type.
+  ///
+  /// These empty collections are only created once and the same node is returned
+  /// on subsequent calls, reducing memory usage.
+  mutating func emptyCollection(_: RawTypeSpecifierListSyntax.Type) -> RawTypeSpecifierListSyntax {
+    if _emptyRawTypeSpecifierListSyntax == nil {
+      _emptyRawTypeSpecifierListSyntax = RawTypeSpecifierListSyntax(elements: [], arena: self.arena)
+    }
+    return _emptyRawTypeSpecifierListSyntax!
   }
 
   /// The delegated initializer for the parser.
@@ -663,7 +685,10 @@ extension Parser {
       return (nil, self.consumeAnyToken(remapping: .identifier))
     }
     if allowSelfOrCapitalSelfAsIdentifier,
-      let selfOrCapitalSelf = self.consume(if: TokenSpec(.self, remapping: .identifier), TokenSpec(.Self, remapping: .identifier))
+      let selfOrCapitalSelf = self.consume(
+        if: TokenSpec(.self, remapping: .identifier),
+        TokenSpec(.Self, remapping: .identifier)
+      )
     {
       return (nil, selfOrCapitalSelf)
     }
@@ -699,7 +724,10 @@ extension Parser {
   /// That way, if the developer forgot to to type `{`, we won't eat `}` that were most likely intended to close an outer scope.
   ///
   /// If `leftBrace` is present or `introducer` is `nil`, this is equivalent to `self.expect(.rightBrace)`.
-  mutating func expectRightBrace(leftBrace: RawTokenSyntax, introducer: RawTokenSyntax?) -> (unexpected: RawUnexpectedNodesSyntax?, token: RawTokenSyntax) {
+  mutating func expectRightBrace(
+    leftBrace: RawTokenSyntax,
+    introducer: RawTokenSyntax?
+  ) -> (unexpected: RawUnexpectedNodesSyntax?, token: RawTokenSyntax) {
     func indentation(_ pieces: [RawTriviaPiece]) -> RawTriviaPiece? {
       if pieces.last?.isNewline == true {
         return .spaces(0)
@@ -818,8 +846,10 @@ extension Parser {
   ) -> (unexpected: RawUnexpectedNodesSyntax?, period: RawTokenSyntax, skipMemberName: Bool) {
     precondition(self.at(.period))
 
-    let beforePeriodWhitespace = previousNode?.raw.trailingTriviaByteLength ?? 0 > 0 || self.currentToken.leadingTriviaByteLength > 0
-    let afterPeriodWhitespace = self.currentToken.trailingTriviaByteLength > 0 || self.peek().leadingTriviaByteLength > 0
+    let beforePeriodWhitespace =
+      previousNode?.raw.trailingTriviaByteLength ?? 0 > 0 || self.currentToken.leadingTriviaByteLength > 0
+    let afterPeriodWhitespace =
+      self.currentToken.trailingTriviaByteLength > 0 || self.peek().leadingTriviaByteLength > 0
     let afterContainsAnyNewline = self.peek().isAtStartOfLine
 
     let period = self.consumeAnyToken()

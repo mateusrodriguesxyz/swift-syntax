@@ -86,7 +86,7 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
   func verify<Node: RawSyntaxNodeProtocol>(
       _ raw: RawSyntax?, 
       as _: Node.Type, 
-      file: StaticString = #file, 
+      file: StaticString = #filePath, 
       line: UInt = #line
     ) -> ValidationError? {
     guard let raw = raw else {
@@ -105,7 +105,7 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
   func verify<Node: RawSyntaxNodeProtocol>(
       _ raw: RawSyntax?, 
       as _: Node?.Type, 
-      file: StaticString = #file, 
+      file: StaticString = #filePath, 
       line: UInt = #line
     ) -> ValidationError? {
     if raw != nil {
@@ -122,7 +122,7 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
       _ raw: RawSyntax?, 
       as _: RawTokenSyntax?.Type, 
       tokenChoices: [TokenChoice], 
-      file: StaticString = #file, 
+      file: StaticString = #filePath, 
       line: UInt = #line
     ) -> ValidationError? {
     // Validation of token choice is currently causing assertion failures where
@@ -144,7 +144,7 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
       _ raw: RawSyntax?, 
       as _: RawTokenSyntax.Type, 
       tokenChoices: [TokenChoice], 
-      file: StaticString = #file, 
+      file: StaticString = #filePath, 
       line: UInt = #line
     ) -> ValidationError? {
     // Validation of token choice is currently causing assertion failures where
@@ -379,17 +379,7 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
   case .attributedType:
     assert(layout.count == 7)
     assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
-    assertNoError(kind, 1, verify(layout[1], as: RawTokenSyntax?.self, tokenChoices: [
-            .keyword("inout"), 
-            .keyword("__shared"), 
-            .keyword("__owned"), 
-            .keyword("isolated"), 
-            .keyword("_const"), 
-            .keyword("borrowing"), 
-            .keyword("consuming"), 
-            .keyword("transferring"), 
-            .keyword("_resultDependsOn")
-          ]))
+    assertNoError(kind, 1, verify(layout[1], as: RawTypeSpecifierListSyntax.self))
     assertNoError(kind, 2, verify(layout[2], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 3, verify(layout[3], as: RawAttributeListSyntax.self))
     assertNoError(kind, 4, verify(layout[4], as: RawUnexpectedNodesSyntax?.self))
@@ -474,7 +464,7 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
     assertNoError(kind, 2, verify(layout[2], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 3, verify(layout[3], as: RawTokenSyntax?.self, tokenChoices: [.tokenKind(.identifier)]))
     assertNoError(kind, 4, verify(layout[4], as: RawUnexpectedNodesSyntax?.self))
-  case .canImportExpr:
+  case ._canImportExpr:
     assert(layout.count == 11)
     assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 1, verify(layout[1], as: RawTokenSyntax.self, tokenChoices: [.keyword("canImport")]))
@@ -483,11 +473,11 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
     assertNoError(kind, 4, verify(layout[4], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 5, verify(layout[5], as: RawTokenSyntax.self, tokenChoices: [.tokenKind(.identifier)]))
     assertNoError(kind, 6, verify(layout[6], as: RawUnexpectedNodesSyntax?.self))
-    assertNoError(kind, 7, verify(layout[7], as: RawCanImportVersionInfoSyntax?.self))
+    assertNoError(kind, 7, verify(layout[7], as: Raw_CanImportVersionInfoSyntax?.self))
     assertNoError(kind, 8, verify(layout[8], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 9, verify(layout[9], as: RawTokenSyntax.self, tokenChoices: [.tokenKind(.rightParen)]))
     assertNoError(kind, 10, verify(layout[10], as: RawUnexpectedNodesSyntax?.self))
-  case .canImportVersionInfo:
+  case ._canImportVersionInfo:
     assert(layout.count == 9)
     assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 1, verify(layout[1], as: RawTokenSyntax.self, tokenChoices: [.tokenKind(.comma)]))
@@ -1724,6 +1714,30 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
     assertNoError(kind, 14, verify(layout[14], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 15, verify(layout[15], as: RawTokenSyntax?.self, tokenChoices: [.tokenKind(.rightParen)]))
     assertNoError(kind, 16, verify(layout[16], as: RawUnexpectedNodesSyntax?.self))
+  case .lifetimeSpecifierArgumentList:
+    for (index, element) in layout.enumerated() {
+      assertNoError(kind, index, verify(element, as: RawLifetimeSpecifierArgumentSyntax.self))
+    }
+  case .lifetimeSpecifierArgument:
+    assert(layout.count == 5)
+    assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 1, verify(layout[1], as: RawTokenSyntax.self, tokenChoices: [.tokenKind(.identifier), .keyword("self"), .tokenKind(.integerLiteral)]))
+    assertNoError(kind, 2, verify(layout[2], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 3, verify(layout[3], as: RawTokenSyntax?.self, tokenChoices: [.tokenKind(.comma)]))
+    assertNoError(kind, 4, verify(layout[4], as: RawUnexpectedNodesSyntax?.self))
+  case .lifetimeTypeSpecifier:
+    assert(layout.count == 11)
+    assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 1, verify(layout[1], as: RawTokenSyntax.self, tokenChoices: [.keyword("dependsOn")]))
+    assertNoError(kind, 2, verify(layout[2], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 3, verify(layout[3], as: RawTokenSyntax.self, tokenChoices: [.tokenKind(.leftParen)]))
+    assertNoError(kind, 4, verify(layout[4], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 5, verify(layout[5], as: RawTokenSyntax?.self, tokenChoices: [.keyword("scoped")]))
+    assertNoError(kind, 6, verify(layout[6], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 7, verify(layout[7], as: RawLifetimeSpecifierArgumentListSyntax.self))
+    assertNoError(kind, 8, verify(layout[8], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 9, verify(layout[9], as: RawTokenSyntax.self, tokenChoices: [.tokenKind(.rightParen)]))
+    assertNoError(kind, 10, verify(layout[10], as: RawUnexpectedNodesSyntax?.self))
   case .macroDecl:
     assert(layout.count == 17)
     assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
@@ -2272,6 +2286,21 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
     for (index, element) in layout.enumerated() {
       assertNoError(kind, index, verify(element, as: RawStringSegmentSyntax.self))
     }
+  case .simpleTypeSpecifier:
+    assert(layout.count == 3)
+    assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
+    assertNoError(kind, 1, verify(layout[1], as: RawTokenSyntax.self, tokenChoices: [
+            .keyword("inout"), 
+            .keyword("__shared"), 
+            .keyword("__owned"), 
+            .keyword("isolated"), 
+            .keyword("_const"), 
+            .keyword("borrowing"), 
+            .keyword("consuming"), 
+            .keyword("transferring"), 
+            .keyword("_resultDependsOn")
+          ]))
+    assertNoError(kind, 2, verify(layout[2], as: RawUnexpectedNodesSyntax?.self))
   case .someOrAnyType:
     assert(layout.count == 5)
     assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))
@@ -2619,6 +2648,12 @@ func validateLayout(layout: RawSyntaxBuffer, as kind: SyntaxKind) {
     assertNoError(kind, 2, verify(layout[2], as: RawUnexpectedNodesSyntax?.self))
     assertNoError(kind, 3, verify(layout[3], as: RawTypeSyntax.self))
     assertNoError(kind, 4, verify(layout[4], as: RawUnexpectedNodesSyntax?.self))
+  case .typeSpecifierList:
+    for (index, element) in layout.enumerated() {
+      assertAnyHasNoError(kind, index, [
+          verify(element, as: RawSimpleTypeSpecifierSyntax.self),
+          verify(element, as: RawLifetimeTypeSpecifierSyntax.self)])
+    }
   case .unavailableFromAsyncAttributeArguments:
     assert(layout.count == 7)
     assertNoError(kind, 0, verify(layout[0], as: RawUnexpectedNodesSyntax?.self))

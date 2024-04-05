@@ -228,10 +228,12 @@ enum TokenPrecedence: Comparable {
       // Operator stuff
       .operator, .precedencegroup,
       // Declaration Modifiers
-      .__consuming, .final, .required, .optional, .lazy, .dynamic, .infix, .postfix, .prefix, .mutating, .nonmutating, .convenience, .override, .package, .open,
+      .__consuming, .final, .required, .optional, .lazy, .dynamic, .infix, .postfix, .prefix, .mutating, .nonmutating,
+      .convenience, .override, .package, .open,
       .__setter_access, .indirect, .isolated, .nonisolated, .distributed, ._local,
-      .inout, ._mutating, ._borrow, ._borrowing, .borrowing, ._consuming, .consuming, .consume, ._resultDependsOnSelf, ._resultDependsOn,
-      .transferring,
+      .inout, ._mutating, ._borrow, ._borrowing, .borrowing, ._consuming, .consuming, .consume, ._resultDependsOnSelf,
+      ._resultDependsOn,
+      .transferring, .dependsOn, .scoped,
       // Accessors
       .get, .set, .didSet, .willSet, .unsafeAddress, .addressWithOwner, .addressWithNativeOwner, .unsafeMutableAddress,
       .mutableAddressWithOwner, .mutableAddressWithNativeOwner, ._read, ._modify,
@@ -358,6 +360,10 @@ enum TokenPrecedence: Comparable {
       .wrt,
       .unsafe:
       self = .exprKeyword
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }

@@ -272,19 +272,19 @@ open class SyntaxAnyVisitor: SyntaxVisitor {
     visitAnyPost(node._syntaxNode)
   }
   
-  override open func visit(_ node: CanImportExprSyntax) -> SyntaxVisitorContinueKind {
+  override open func visit(_ node: _CanImportExprSyntax) -> SyntaxVisitorContinueKind {
     return visitAny(node._syntaxNode)
   }
   
-  override open func visitPost(_ node: CanImportExprSyntax) {
+  override open func visitPost(_ node: _CanImportExprSyntax) {
     visitAnyPost(node._syntaxNode)
   }
   
-  override open func visit(_ node: CanImportVersionInfoSyntax) -> SyntaxVisitorContinueKind {
+  override open func visit(_ node: _CanImportVersionInfoSyntax) -> SyntaxVisitorContinueKind {
     return visitAny(node._syntaxNode)
   }
   
-  override open func visitPost(_ node: CanImportVersionInfoSyntax) {
+  override open func visitPost(_ node: _CanImportVersionInfoSyntax) {
     visitAnyPost(node._syntaxNode)
   }
   
@@ -1342,6 +1342,48 @@ open class SyntaxAnyVisitor: SyntaxVisitor {
     visitAnyPost(node._syntaxNode)
   }
   
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  override open func visit(_ node: LifetimeSpecifierArgumentListSyntax) -> SyntaxVisitorContinueKind {
+    return visitAny(node._syntaxNode)
+  }
+  
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  override open func visitPost(_ node: LifetimeSpecifierArgumentListSyntax) {
+    visitAnyPost(node._syntaxNode)
+  }
+  
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  override open func visit(_ node: LifetimeSpecifierArgumentSyntax) -> SyntaxVisitorContinueKind {
+    return visitAny(node._syntaxNode)
+  }
+  
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  override open func visitPost(_ node: LifetimeSpecifierArgumentSyntax) {
+    visitAnyPost(node._syntaxNode)
+  }
+  
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  override open func visit(_ node: LifetimeTypeSpecifierSyntax) -> SyntaxVisitorContinueKind {
+    return visitAny(node._syntaxNode)
+  }
+  
+  #if compiler(>=5.8)
+  @_spi(ExperimentalLanguageFeatures)
+  #endif
+  override open func visitPost(_ node: LifetimeTypeSpecifierSyntax) {
+    visitAnyPost(node._syntaxNode)
+  }
+  
   override open func visit(_ node: MacroDeclSyntax) -> SyntaxVisitorContinueKind {
     return visitAny(node._syntaxNode)
   }
@@ -1846,6 +1888,14 @@ open class SyntaxAnyVisitor: SyntaxVisitor {
     visitAnyPost(node._syntaxNode)
   }
   
+  override open func visit(_ node: SimpleTypeSpecifierSyntax) -> SyntaxVisitorContinueKind {
+    return visitAny(node._syntaxNode)
+  }
+  
+  override open func visitPost(_ node: SimpleTypeSpecifierSyntax) {
+    visitAnyPost(node._syntaxNode)
+  }
+  
   override open func visit(_ node: SomeOrAnyTypeSyntax) -> SyntaxVisitorContinueKind {
     return visitAny(node._syntaxNode)
   }
@@ -2145,6 +2195,14 @@ open class SyntaxAnyVisitor: SyntaxVisitor {
   }
   
   override open func visitPost(_ node: TypeInitializerClauseSyntax) {
+    visitAnyPost(node._syntaxNode)
+  }
+  
+  override open func visit(_ node: TypeSpecifierListSyntax) -> SyntaxVisitorContinueKind {
+    return visitAny(node._syntaxNode)
+  }
+  
+  override open func visitPost(_ node: TypeSpecifierListSyntax) {
     visitAnyPost(node._syntaxNode)
   }
   

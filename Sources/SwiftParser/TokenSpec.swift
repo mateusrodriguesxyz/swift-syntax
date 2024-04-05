@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+@_spi(RawSyntax) public import SwiftSyntax
+#else
 @_spi(RawSyntax) import SwiftSyntax
+#endif
 
 /// Pre-computes the keyword a lexeme might represent. This makes matching
 /// a lexeme that has been converted into `PrepareForKeyword` match cheaper to
@@ -82,7 +86,10 @@ public struct TokenSpec {
     recoveryPrecedence: TokenPrecedence? = nil,
     allowAtStartOfLine: Bool = true
   ) {
-    precondition(rawTokenKind != .keyword, "To create a TokenSpec for a keyword use the initializer that takes a keyword")
+    precondition(
+      rawTokenKind != .keyword,
+      "To create a TokenSpec for a keyword use the initializer that takes a keyword"
+    )
     self.rawTokenKind = rawTokenKind
     self.keyword = nil
     self.remapping = remapping
@@ -191,7 +198,10 @@ extension TokenConsumer {
   /// Generates a missing token that has the expected kind of `spec`.
   @inline(__always)
   mutating func missingToken(_ spec: TokenSpec) -> Token {
-    return missingToken(spec.remapping ?? spec.rawTokenKind, text: spec.keyword?.defaultText ?? spec.rawTokenKind.defaultText)
+    return missingToken(
+      spec.remapping ?? spec.rawTokenKind,
+      text: spec.keyword?.defaultText ?? spec.rawTokenKind.defaultText
+    )
   }
 
   /// Asserts that the current token matches `spec` and consumes it, performing

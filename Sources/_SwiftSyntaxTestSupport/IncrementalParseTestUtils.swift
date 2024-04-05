@@ -10,9 +10,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+public import SwiftParser
+public import SwiftSyntax
+private import XCTest
+#else
 import SwiftParser
 import SwiftSyntax
 import XCTest
+#endif
 
 /// This function is used to verify the correctness of incremental parsing
 /// containing three parts:
@@ -36,7 +42,7 @@ import XCTest
 public func assertIncrementalParse(
   _ source: String,
   reusedNodes expectedReusedNodes: [ReusedNodeSpec] = [],
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   let (concurrentEdits, originalSource, editedSource) = extractEditsAndSources(from: source)
@@ -93,7 +99,8 @@ public func assertIncrementalParse(
 
   var lastRangeUpperBound = originalString.startIndex
   for expectedReusedNode in expectedReusedNodes {
-    guard let range = byteSourceRange(for: expectedReusedNode.source, in: originalString, after: lastRangeUpperBound) else {
+    guard let range = byteSourceRange(for: expectedReusedNode.source, in: originalString, after: lastRangeUpperBound)
+    else {
       XCTFail("Fail to find string in original source,", file: expectedReusedNode.file, line: expectedReusedNode.line)
       continue
     }
@@ -147,7 +154,7 @@ public struct ReusedNodeSpec {
   public init(
     _ source: String,
     kind: SyntaxKind,
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) {
     self.source = source
@@ -164,7 +171,9 @@ public struct ReusedNodeSpec {
 /// Contents between `⏩️` and `⏸️` are source text that before modification, contents
 /// betwwen `⏸️` and `⏪️` are source text that after modification
 /// i.e. `⏩️foo⏸️bar⏪️`, the original source is `foo` and the edited source is `bar`
-public func extractEditsAndSources(from source: String) -> (edits: ConcurrentEdits, orignialSource: Substring, editedSource: Substring) {
+public func extractEditsAndSources(
+  from source: String
+) -> (edits: ConcurrentEdits, originalSource: Substring, editedSource: Substring) {
   var editedSource = Substring()
   var originalSource = Substring()
   var concurrentEdits: [IncrementalEdit] = []
@@ -182,10 +191,7 @@ public func extractEditsAndSources(from source: String) -> (edits: ConcurrentEdi
         from: source.index(after: startIndex),
         to: separateIndex
       ),
-      replacementLength: source.utf8.distance(
-        from: source.index(after: separateIndex),
-        to: endIndex
-      )
+      replacement: Array(source.utf8[source.index(after: separateIndex)..<endIndex])
     )
     originalSource += source[source.index(after: startIndex)..<separateIndex]
 
@@ -203,7 +209,9 @@ public func extractEditsAndSources(from source: String) -> (edits: ConcurrentEdi
     let edits = try ConcurrentEdits(concurrent: concurrentEdits)
     return (edits, originalSource, editedSource)
   } catch {
-    fatalError("ConcurrentEdits created by the test case do not satisfy ConcurrentEdits requirements, please check the test setup")
+    fatalError(
+      "ConcurrentEdits created by the test case do not satisfy ConcurrentEdits requirements, please check the test setup"
+    )
   }
 }
 
@@ -213,12 +221,8 @@ public func extractEditsAndSources(from source: String) -> (edits: ConcurrentEdi
 public func applyEdits(
   _ edits: [IncrementalEdit],
   concurrent: Bool,
-  to testString: String,
-  replacementChar: Character = "?"
+  to testString: String
 ) -> String {
-  guard let replacementAscii = replacementChar.asciiValue else {
-    fatalError("replacementChar must be an ASCII character")
-  }
   var edits = edits
   if concurrent {
     XCTAssert(ConcurrentEdits._isValidConcurrentEditArray(edits))
@@ -232,7 +236,7 @@ public func applyEdits(
   for edit in edits {
     assert(edit.endOffset <= bytes.count)
     bytes.removeSubrange(edit.offset..<edit.endOffset)
-    bytes.insert(contentsOf: [UInt8](repeating: replacementAscii, count: edit.replacementLength), at: edit.offset)
+    bytes.insert(contentsOf: edit.replacement, at: edit.offset)
   }
   return String(bytes: bytes, encoding: .utf8)!
 }

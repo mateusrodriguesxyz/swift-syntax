@@ -84,7 +84,7 @@ let rawSyntaxValidationFile = try! SourceFileSyntax(leadingTrivia: copyrightHead
 
               DeclSyntax(
                 """
-                func verify<Node: RawSyntaxNodeProtocol>(_ raw: RawSyntax?, as _: Node.Type, file: StaticString = #file, line: UInt = #line) -> ValidationError? {
+                func verify<Node: RawSyntaxNodeProtocol>(_ raw: RawSyntax?, as _: Node.Type, file: StaticString = #filePath, line: UInt = #line) -> ValidationError? {
                   guard let raw = raw else {
                     return .expectedNonNil(expectedKind: Node.self, file: file, line: line)
                   }
@@ -98,7 +98,7 @@ let rawSyntaxValidationFile = try! SourceFileSyntax(leadingTrivia: copyrightHead
 
               DeclSyntax(
                 """
-                func verify<Node: RawSyntaxNodeProtocol>(_ raw: RawSyntax?, as _: Node?.Type, file: StaticString = #file, line: UInt = #line) -> ValidationError? {
+                func verify<Node: RawSyntaxNodeProtocol>(_ raw: RawSyntax?, as _: Node?.Type, file: StaticString = #filePath, line: UInt = #line) -> ValidationError? {
                   if raw != nil {
                     return verify(raw, as: Node.self, file: file, line: line)
                   }
@@ -109,7 +109,7 @@ let rawSyntaxValidationFile = try! SourceFileSyntax(leadingTrivia: copyrightHead
 
               DeclSyntax(
                 """
-                func verify(_ raw: RawSyntax?, as _: RawTokenSyntax?.Type, tokenChoices: [TokenChoice], file: StaticString = #file, line: UInt = #line) -> ValidationError? {
+                func verify(_ raw: RawSyntax?, as _: RawTokenSyntax?.Type, tokenChoices: [TokenChoice], file: StaticString = #filePath, line: UInt = #line) -> ValidationError? {
                   // Validation of token choice is currently causing assertion failures where
                   // the list of expected token choices in the syntax tree doesn't match those
                   // the parser generates. Disable the verification for now until all issues
@@ -124,7 +124,7 @@ let rawSyntaxValidationFile = try! SourceFileSyntax(leadingTrivia: copyrightHead
 
               DeclSyntax(
                 """
-                func verify(_ raw: RawSyntax?, as _: RawTokenSyntax.Type, tokenChoices: [TokenChoice], file: StaticString = #file, line: UInt = #line) -> ValidationError? {
+                func verify(_ raw: RawSyntax?, as _: RawTokenSyntax.Type, tokenChoices: [TokenChoice], file: StaticString = #filePath, line: UInt = #line) -> ValidationError? {
                   // Validation of token choice is currently causing assertion failures where
                   // the list of expected token choices in the syntax tree doesn't match those
                   // the parser generates. Disable the verification for now until all issues
@@ -208,7 +208,9 @@ let rawSyntaxValidationFile = try! SourceFileSyntax(leadingTrivia: copyrightHead
                           let verifiedChoices = ArrayExprSyntax {
                             ArrayElementSyntax(
                               leadingTrivia: .newline,
-                              expression: ExprSyntax("verify(layout[\(raw: index)], as: Raw\(child.buildableType.buildable).self)")
+                              expression: ExprSyntax(
+                                "verify(layout[\(raw: index)], as: Raw\(child.buildableType.buildable).self)"
+                              )
                             )
                           }
 
@@ -229,7 +231,9 @@ let rawSyntaxValidationFile = try! SourceFileSyntax(leadingTrivia: copyrightHead
                           )
                           ExprSyntax("assertNoError(kind, \(raw: index), \(verifyCall))")
                         default:
-                          ExprSyntax("assertNoError(kind, \(raw: index), verify(layout[\(raw: index)], as: Raw\(child.buildableType.buildable).self))")
+                          ExprSyntax(
+                            "assertNoError(kind, \(raw: index), verify(layout[\(raw: index)], as: Raw\(child.buildableType.buildable).self))"
+                          )
                         }
                       }
                     } else if let node = node.collectionNode {

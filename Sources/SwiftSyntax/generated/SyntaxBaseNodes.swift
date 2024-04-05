@@ -14,7 +14,7 @@
 
 // MARK: - DeclSyntax
 
-/// Protocol to which all ``DeclSyntax`` nodes conform. 
+/// Protocol to which all ``DeclSyntax`` nodes conform.
 ///
 /// Extension point to add common methods to all ``DeclSyntax`` nodes.
 ///
@@ -315,7 +315,7 @@ public extension _LeafDeclSyntaxNodeProtocol {
 
 // MARK: - ExprSyntax
 
-/// Protocol to which all ``ExprSyntax`` nodes conform. 
+/// Protocol to which all ``ExprSyntax`` nodes conform.
 ///
 /// Extension point to add common methods to all ``ExprSyntax`` nodes.
 ///
@@ -464,8 +464,6 @@ public extension Syntax {
 /// - ``BinaryOperatorExprSyntax``
 /// - ``BooleanLiteralExprSyntax``
 /// - ``BorrowExprSyntax``
-/// - ``CanImportExprSyntax``
-/// - ``CanImportVersionInfoSyntax``
 /// - ``ClosureExprSyntax``
 /// - ``ConsumeExprSyntax``
 /// - ``CopyExprSyntax``
@@ -544,7 +542,7 @@ public struct ExprSyntax: ExprSyntaxProtocol, SyntaxHashable {
   
   public init?(_ node: some SyntaxProtocol) {
     switch node.raw.kind {
-    case .arrayExpr, .arrowExpr, .asExpr, .assignmentExpr, .awaitExpr, .binaryOperatorExpr, .booleanLiteralExpr, .borrowExpr, .canImportExpr, .canImportVersionInfo, .closureExpr, .consumeExpr, .copyExpr, .declReferenceExpr, .dictionaryExpr, .discardAssignmentExpr, .doExpr, .editorPlaceholderExpr, .floatLiteralExpr, .forceUnwrapExpr, .functionCallExpr, .genericSpecializationExpr, .ifExpr, .inOutExpr, .infixOperatorExpr, .integerLiteralExpr, .isExpr, .keyPathExpr, .macroExpansionExpr, .memberAccessExpr, .missingExpr, .nilLiteralExpr, .optionalChainingExpr, .packElementExpr, .packExpansionExpr, .patternExpr, .postfixIfConfigExpr, .postfixOperatorExpr, .prefixOperatorExpr, .regexLiteralExpr, .sequenceExpr, .simpleStringLiteralExpr, .stringLiteralExpr, .subscriptCallExpr, .superExpr, .switchExpr, .ternaryExpr, .tryExpr, .tupleExpr, .typeExpr, .unresolvedAsExpr, .unresolvedIsExpr, .unresolvedTernaryExpr:
+    case .arrayExpr, .arrowExpr, .asExpr, .assignmentExpr, .awaitExpr, .binaryOperatorExpr, .booleanLiteralExpr, .borrowExpr, ._canImportExpr, ._canImportVersionInfo, .closureExpr, .consumeExpr, .copyExpr, .declReferenceExpr, .dictionaryExpr, .discardAssignmentExpr, .doExpr, .editorPlaceholderExpr, .floatLiteralExpr, .forceUnwrapExpr, .functionCallExpr, .genericSpecializationExpr, .ifExpr, .inOutExpr, .infixOperatorExpr, .integerLiteralExpr, .isExpr, .keyPathExpr, .macroExpansionExpr, .memberAccessExpr, .missingExpr, .nilLiteralExpr, .optionalChainingExpr, .packElementExpr, .packExpansionExpr, .patternExpr, .postfixIfConfigExpr, .postfixOperatorExpr, .prefixOperatorExpr, .regexLiteralExpr, .sequenceExpr, .simpleStringLiteralExpr, .stringLiteralExpr, .subscriptCallExpr, .superExpr, .switchExpr, .ternaryExpr, .tryExpr, .tupleExpr, .typeExpr, .unresolvedAsExpr, .unresolvedIsExpr, .unresolvedTernaryExpr:
       self._syntaxNode = node._syntaxNode
     default:
       return nil
@@ -577,8 +575,8 @@ public struct ExprSyntax: ExprSyntaxProtocol, SyntaxHashable {
           .node(BinaryOperatorExprSyntax.self),
           .node(BooleanLiteralExprSyntax.self),
           .node(BorrowExprSyntax.self),
-          .node(CanImportExprSyntax.self),
-          .node(CanImportVersionInfoSyntax.self),
+          .node(_CanImportExprSyntax.self),
+          .node(_CanImportVersionInfoSyntax.self),
           .node(ClosureExprSyntax.self),
           .node(ConsumeExprSyntax.self),
           .node(CopyExprSyntax.self),
@@ -673,7 +671,7 @@ public extension _LeafExprSyntaxNodeProtocol {
 
 // MARK: - PatternSyntax
 
-/// Protocol to which all ``PatternSyntax`` nodes conform. 
+/// Protocol to which all ``PatternSyntax`` nodes conform.
 ///
 /// Extension point to add common methods to all ``PatternSyntax`` nodes.
 ///
@@ -940,7 +938,7 @@ public extension _LeafPatternSyntaxNodeProtocol {
 
 // MARK: - StmtSyntax
 
-/// Protocol to which all ``StmtSyntax`` nodes conform. 
+/// Protocol to which all ``StmtSyntax`` nodes conform.
 ///
 /// Extension point to add common methods to all ``StmtSyntax`` nodes.
 ///
@@ -1226,7 +1224,7 @@ public extension _LeafStmtSyntaxNodeProtocol {
 
 // MARK: - TypeSyntax
 
-/// Protocol to which all ``TypeSyntax`` nodes conform. 
+/// Protocol to which all ``TypeSyntax`` nodes conform.
 ///
 /// Extension point to add common methods to all ``TypeSyntax`` nodes.
 ///
@@ -1546,8 +1544,8 @@ extension Syntax {
           .node(BooleanLiteralExprSyntax.self),
           .node(BorrowExprSyntax.self),
           .node(BreakStmtSyntax.self),
-          .node(CanImportExprSyntax.self),
-          .node(CanImportVersionInfoSyntax.self),
+          .node(_CanImportExprSyntax.self),
+          .node(_CanImportVersionInfoSyntax.self),
           .node(CatchClauseListSyntax.self),
           .node(CatchClauseSyntax.self),
           .node(CatchItemListSyntax.self),
@@ -1679,6 +1677,9 @@ extension Syntax {
           .node(LabeledSpecializeArgumentSyntax.self),
           .node(LabeledStmtSyntax.self),
           .node(LayoutRequirementSyntax.self),
+          .node(LifetimeSpecifierArgumentListSyntax.self),
+          .node(LifetimeSpecifierArgumentSyntax.self),
+          .node(LifetimeTypeSpecifierSyntax.self),
           .node(MacroDeclSyntax.self),
           .node(MacroExpansionDeclSyntax.self),
           .node(MacroExpansionExprSyntax.self),
@@ -1742,6 +1743,7 @@ extension Syntax {
           .node(SequenceExprSyntax.self),
           .node(SimpleStringLiteralExprSyntax.self),
           .node(SimpleStringLiteralSegmentListSyntax.self),
+          .node(SimpleTypeSpecifierSyntax.self),
           .node(SomeOrAnyTypeSyntax.self),
           .node(SourceFileSyntax.self),
           .node(SpecializeAttributeArgumentListSyntax.self),
@@ -1779,6 +1781,7 @@ extension Syntax {
           .node(TypeEffectSpecifiersSyntax.self),
           .node(TypeExprSyntax.self),
           .node(TypeInitializerClauseSyntax.self),
+          .node(TypeSpecifierListSyntax.self),
           .node(UnavailableFromAsyncAttributeArgumentsSyntax.self),
           .node(UnderscorePrivateAttributeArgumentsSyntax.self),
           .node(UnexpectedNodesSyntax.self),

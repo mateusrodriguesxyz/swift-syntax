@@ -15,7 +15,11 @@ import SwiftSyntaxBuilder
 import SyntaxSupport
 import Utils
 
-func tokenCaseMatch(_ caseName: TokenSyntax, experimentalFeature: ExperimentalFeature?, experimentalFeature2: ExperimentalFeature?) -> SwitchCaseSyntax {
+func tokenCaseMatch(
+  _ caseName: TokenSyntax,
+  experimentalFeature: ExperimentalFeature?,
+  experimentalFeature2: ExperimentalFeature?
+) -> SwitchCaseSyntax {
   var whereClause = ""
   if let feature = experimentalFeature {
     whereClause += "where experimentalFeatures.contains(.\(feature.token))"
@@ -27,7 +31,15 @@ func tokenCaseMatch(_ caseName: TokenSyntax, experimentalFeature: ExperimentalFe
 }
 
 let parserTokenSpecSetFile = SourceFileSyntax(leadingTrivia: copyrightHeader) {
-  DeclSyntax("@_spi(RawSyntax) @_spi(ExperimentalLanguageFeatures) import SwiftSyntax")
+  DeclSyntax(
+    """
+    #if swift(>=6)
+    @_spi(RawSyntax) @_spi(ExperimentalLanguageFeatures) public import SwiftSyntax
+    #else
+    @_spi(RawSyntax) @_spi(ExperimentalLanguageFeatures) import SwiftSyntax
+    #endif
+    """
+  )
 
   for layoutNode in SYNTAX_NODES.compactMap(\.layoutNode) {
     for child in layoutNode.children {
@@ -53,7 +65,9 @@ let parserTokenSpecSetFile = SourceFileSyntax(leadingTrivia: copyrightHeader) {
               }
             }
 
-            try InitializerDeclSyntax("init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures)") {
+            try InitializerDeclSyntax(
+              "init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures)"
+            ) {
               try SwitchExprSyntax("switch PrepareForKeywordMatch(lexeme)") {
                 for choice in choices {
                   switch choice {
@@ -70,6 +84,17 @@ let parserTokenSpecSetFile = SourceFileSyntax(leadingTrivia: copyrightHeader) {
                       experimentalFeature2: nil
                     )
                   }
+                }
+                SwitchCaseSyntax("default: return nil")
+              }
+            }
+
+            try InitializerDeclSyntax("public init?(token: TokenSyntax)") {
+              try SwitchExprSyntax("switch token") {
+                for choice in choices {
+                  SwitchCaseSyntax(
+                    "case TokenSpec(.\(choice.varOrCaseName)): self = .\(choice.varOrCaseName)"
+                  )
                 }
                 SwitchCaseSyntax("default: return nil")
               }

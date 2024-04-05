@@ -74,7 +74,8 @@ let package = Package(
 
     .target(
       name: "SwiftCompilerPlugin",
-      dependencies: ["SwiftCompilerPluginMessageHandling", "SwiftSyntaxMacros"]
+      dependencies: ["SwiftCompilerPluginMessageHandling", "SwiftSyntaxMacros"],
+      exclude: ["CMakeLists.txt"]
     ),
 
     .testTarget(
@@ -86,7 +87,14 @@ let package = Package(
 
     .target(
       name: "SwiftCompilerPluginMessageHandling",
-      dependencies: ["SwiftDiagnostics", "SwiftOperators", "SwiftParser", "SwiftSyntax", "SwiftSyntaxMacros", "SwiftSyntaxMacroExpansion"],
+      dependencies: [
+        "SwiftDiagnostics",
+        "SwiftOperators",
+        "SwiftParser",
+        "SwiftSyntax",
+        "SwiftSyntaxMacros",
+        "SwiftSyntaxMacroExpansion",
+      ],
       exclude: ["CMakeLists.txt"]
     ),
 
@@ -107,7 +115,7 @@ let package = Package(
 
     .target(
       name: "SwiftIDEUtils",
-      dependencies: ["SwiftSyntax", "SwiftParser"],
+      dependencies: ["SwiftSyntax", "SwiftDiagnostics", "SwiftParser"],
       exclude: ["CMakeLists.txt"]
     ),
 
@@ -135,17 +143,17 @@ let package = Package(
 
     .target(
       name: "SwiftSyntax509",
-      dependencies: []
+      path: "Sources/VersionMarkerModules/SwiftSyntax509"
     ),
 
     .target(
       name: "SwiftSyntax510",
-      dependencies: []
+      path: "Sources/VersionMarkerModules/SwiftSyntax510"
     ),
 
     .target(
       name: "SwiftSyntax600",
-      dependencies: []
+      path: "Sources/VersionMarkerModules/SwiftSyntax600"
     ),
 
     // MARK: SwiftSyntaxBuilder
@@ -182,8 +190,15 @@ let package = Package(
     .testTarget(
       name: "SwiftSyntaxMacroExpansionTest",
       dependencies: [
-        "SwiftSyntax", "_SwiftSyntaxTestSupport", "SwiftDiagnostics", "SwiftOperators", "SwiftParser", "SwiftSyntaxBuilder", "SwiftSyntaxMacros",
-        "SwiftSyntaxMacroExpansion", "SwiftSyntaxMacrosTestSupport",
+        "SwiftSyntax",
+        "_SwiftSyntaxTestSupport",
+        "SwiftDiagnostics",
+        "SwiftOperators",
+        "SwiftParser",
+        "SwiftSyntaxBuilder",
+        "SwiftSyntaxMacros",
+        "SwiftSyntaxMacroExpansion",
+        "SwiftSyntaxMacrosTestSupport",
       ]
     ),
 
@@ -191,7 +206,14 @@ let package = Package(
 
     .target(
       name: "SwiftSyntaxMacrosTestSupport",
-      dependencies: ["_SwiftSyntaxTestSupport", "SwiftDiagnostics", "SwiftParser", "SwiftSyntaxMacros", "SwiftSyntaxMacroExpansion"]
+      dependencies: [
+        "_SwiftSyntaxTestSupport",
+        "SwiftDiagnostics",
+        "SwiftIDEUtils",
+        "SwiftParser",
+        "SwiftSyntaxMacros",
+        "SwiftSyntaxMacroExpansion",
+      ]
     ),
 
     .testTarget(
@@ -206,12 +228,18 @@ let package = Package(
       dependencies: ["SwiftSyntax"],
       exclude: ["CMakeLists.txt", "README.md"],
       swiftSettings: swiftParserSwiftSettings
-
     ),
 
     .testTarget(
       name: "SwiftParserTest",
-      dependencies: ["_SwiftSyntaxTestSupport", "SwiftDiagnostics", "SwiftOperators", "SwiftParser", "SwiftSyntaxBuilder"],
+      dependencies: [
+        "_SwiftSyntaxTestSupport",
+        "SwiftDiagnostics",
+        "SwiftIDEUtils",
+        "SwiftOperators",
+        "SwiftParser",
+        "SwiftSyntaxBuilder",
+      ],
       swiftSettings: swiftParserSwiftSettings
     ),
 
@@ -247,7 +275,8 @@ let package = Package(
 
     .target(
       name: "SwiftRefactor",
-      dependencies: ["SwiftBasicFormat", "SwiftParser", "SwiftSyntax", "SwiftSyntaxBuilder"]
+      dependencies: ["SwiftBasicFormat", "SwiftParser", "SwiftSyntax", "SwiftSyntaxBuilder"],
+      exclude: ["CMakeLists.txt"]
     ),
 
     .testTarget(
@@ -306,9 +335,6 @@ var rawSyntaxValidation: Bool { hasEnvironmentVariable("SWIFTSYNTAX_ENABLE_RAWSY
 ///
 /// See CONTRIBUTING.md for more information
 var alternateTokenIntrospection: Bool { hasEnvironmentVariable("SWIFTPARSER_ENABLE_ALTERNATE_TOKEN_INTROSPECTION") }
-
-/// Assume that swift-argument-parser is checked out next to swift-syntax and use that instead of fetching a remote dependency.
-var useLocalDependencies: Bool { hasEnvironmentVariable("SWIFTCI_USE_LOCAL_DEPS") }
 
 // MARK: - Compute custom build settings
 

@@ -43,8 +43,17 @@ public struct KeywordSpec {
   ///
   /// This is typically used to mark APIs as SPI when the keyword is part of an experimental language feature.
   public var apiAttributes: AttributeListSyntax {
-    guard isExperimental else { return "" }
-    return AttributeListSyntax("@_spi(ExperimentalLanguageFeatures)").with(\.trailingTrivia, .newline)
+    let attrList = AttributeListSyntax {
+      if isExperimental {
+        let experimentalSPI: AttributeListSyntax = """
+          #if compiler(>=5.8)
+          @_spi(ExperimentalLanguageFeatures)
+          #endif
+          """
+        experimentalSPI.with(\.trailingTrivia, .newline)
+      }
+    }
+    return attrList.with(\.trailingTrivia, attrList.isEmpty ? [] : .newline)
   }
 
   /// Initializes a new `KeywordSpec` instance.
@@ -183,6 +192,7 @@ public enum Keyword: CaseIterable {
   case `default`
   case `defer`
   case `deinit`
+  case dependsOn
   case deprecated
   case derivative
   case didSet
@@ -272,6 +282,7 @@ public enum Keyword: CaseIterable {
   case reverse
   case right
   case safe
+  case scoped
   case `self`
   case `Self`
   case Sendable
@@ -328,6 +339,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_backDeploy")
     case ._borrow:
       return KeywordSpec("_borrow")
+    case ._borrowing:
+      return KeywordSpec("_borrowing", experimentalFeature: .referenceBindings, or: .borrowingSwitch)
     case ._BridgeObject:
       return KeywordSpec("_BridgeObject")
     case ._cdecl:
@@ -338,6 +351,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_compilerInitialized")
     case ._const:
       return KeywordSpec("_const")
+    case ._consuming:
+      return KeywordSpec("_consuming", experimentalFeature: .referenceBindings)
     case ._documentation:
       return KeywordSpec("_documentation")
     case ._dynamicReplacement:
@@ -358,6 +373,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("_modify")
     case ._move:
       return KeywordSpec("_move")
+    case ._mutating:
+      return KeywordSpec("_mutating", experimentalFeature: .referenceBindings)
     case ._NativeClass:
       return KeywordSpec("_NativeClass")
     case ._NativeRefCountedObject:
@@ -484,6 +501,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("defer", isLexerClassified: true)
     case .deinit:
       return KeywordSpec("deinit", isLexerClassified: true)
+    case .dependsOn:
+      return KeywordSpec("dependsOn", experimentalFeature: .nonescapableTypes)
     case .deprecated:
       return KeywordSpec("deprecated")
     case .derivative:
@@ -660,6 +679,8 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("right")
     case .safe:
       return KeywordSpec("safe")
+    case .scoped:
+      return KeywordSpec("scoped", experimentalFeature: .nonescapableTypes)
     case .self:
       return KeywordSpec("self", isLexerClassified: true)
     case .Self:
@@ -743,12 +764,6 @@ public enum Keyword: CaseIterable {
       return KeywordSpec("wrt")
     case .yield:
       return KeywordSpec("yield")
-    case ._borrowing:
-      return KeywordSpec("_borrowing", experimentalFeature: .referenceBindings, or: .borrowingSwitch)
-    case ._consuming:
-      return KeywordSpec("_consuming", experimentalFeature: .referenceBindings)
-    case ._mutating:
-      return KeywordSpec("_mutating", experimentalFeature: .referenceBindings)
     }
   }
 }

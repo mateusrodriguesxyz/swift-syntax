@@ -145,7 +145,11 @@ class SourceManager {
 
   /// Get location of `node` in the known root nodes.
   /// The root node of `node` must be one of the returned value from `add(_:)`.
-  func location(of node: Syntax, at kind: PositionInSyntaxNode, filePathMode: SourceLocationFilePathMode) -> SourceLocation? {
+  func location(
+    of node: Syntax,
+    at kind: PositionInSyntaxNode,
+    filePathMode: SourceLocationFilePathMode
+  ) -> SourceLocation? {
     guard let base = self.knownSourceSyntax[node.root.id] else {
       return nil
     }
@@ -153,6 +157,9 @@ class SourceManager {
     switch filePathMode {
     case .fileID: file = base.location.fileID
     case .filePath: file = base.location.fileName
+    #if RESILIENT_LIBRARIES
+    @unknown default: fatalError()
+    #endif
     }
 
     let localPosition = node.position(at: kind)
@@ -185,6 +192,10 @@ fileprivate extension Syntax {
       return self.endPositionBeforeTrailingTrivia
     case .afterTrailingTrivia:
       return self.endPosition
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }

@@ -16,7 +16,15 @@ import SyntaxSupport
 import Utils
 
 let resultBuildersFile = SourceFileSyntax(leadingTrivia: copyrightHeader) {
-  DeclSyntax("import SwiftSyntax")
+  DeclSyntax(
+    """
+    #if swift(>=6)
+    @_spi(ExperimentalLanguageFeatures) public import SwiftSyntax
+    #else
+    @_spi(ExperimentalLanguageFeatures) import SwiftSyntax
+    #endif
+    """
+  )
 
   for node in SYNTAX_NODES.compactMap(\.collectionNode) {
     let type = SyntaxBuildableType(kind: .node(kind: node.kind))
@@ -25,8 +33,8 @@ let resultBuildersFile = SourceFileSyntax(leadingTrivia: copyrightHeader) {
       """
       // MARK: - \(type.resultBuilderType)
 
-      @resultBuilder
       \(node.node.apiAttributes())\
+      @resultBuilder
       public struct \(type.resultBuilderType): ListBuilder
       """
     ) {
@@ -40,6 +48,7 @@ let resultBuildersFile = SourceFileSyntax(leadingTrivia: copyrightHeader) {
         for elementChoice in node.elementChoices {
           DeclSyntax(
             """
+            \(SYNTAX_NODE_MAP[elementChoice]?.apiAttributes() ?? [])\
             public static func buildExpression(_ expression: \(elementChoice.syntaxType)) -> Component {
               buildExpression(.init(expression))
             }

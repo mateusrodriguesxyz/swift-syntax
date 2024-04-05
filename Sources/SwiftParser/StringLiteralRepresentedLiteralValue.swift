@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+@_spi(RawSyntax) @_spi(BumpPtrAllocator) public import SwiftSyntax
+#else
 @_spi(RawSyntax) @_spi(BumpPtrAllocator) import SwiftSyntax
+#endif
 
 extension StringLiteralExprSyntax {
 
@@ -39,13 +43,18 @@ extension StringLiteralExprSyntax {
       case .expressionSegment:
         // Bail out if there are any interpolation segments.
         return nil
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
 
     return result
   }
 
-  fileprivate var stringLiteralKind: StringLiteralKind? {
+  @_spi(Compiler)
+  public var stringLiteralKind: StringLiteralKind? {
     switch openingQuote.tokenKind {
     case .stringQuote:
       return .singleLine
@@ -58,21 +67,29 @@ extension StringLiteralExprSyntax {
     }
   }
 
-  fileprivate var delimiterLength: Int {
+  @_spi(Compiler)
+  public var delimiterLength: Int {
     openingPounds?.text.count ?? 0
   }
 }
 
 extension StringSegmentSyntax {
-  fileprivate func appendUnescapedLiteralValue(
+  @_spi(Compiler)
+  public func appendUnescapedLiteralValue(
     stringLiteralKind: StringLiteralKind,
     delimiterLength: Int,
     to output: inout String
   ) {
     precondition(!hasError, "appendUnescapedLiteralValue relies on properly parsed literals")
 
-    var text = content.text
-    text.withUTF8 { buffer in
+    let rawText = content.rawText
+    if !rawText.contains("\\") {
+      // Fast path. No escape sequence.
+      output.append(String(syntaxText: rawText))
+      return
+    }
+
+    rawText.withBuffer { buffer in
       var cursor = Lexer.Cursor(input: buffer, previous: 0)
 
       // Put the cursor in the string literal lexing state. This is just
@@ -88,10 +105,9 @@ extension StringSegmentSyntax {
         )
 
         switch lex {
-        case .success(let scalar):
+        case .success(let scalar),
+          .validatedEscapeSequence(let scalar):
           output.append(Character(scalar))
-        case .validatedEscapeSequence(let character):
-          output.append(character)
         case .endOfString, .error:
           // We get an error at the end of the string because
           // `lexCharacterInStringLiteral` expects the closing quote.

@@ -12,20 +12,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-// MARK: - CanImportExprSyntax
+// MARK: - _CanImportExprSyntax
 
 /// ### Children
 /// 
 ///  - `canImportKeyword`: `canImport`
 ///  - `leftParen`: `(`
 ///  - `importPath`: `<identifier>`
-///  - `versionInfo`: ``CanImportVersionInfoSyntax``?
+///  - `versionInfo`: `_CanImportVersionInfoSyntax`?
 ///  - `rightParen`: `)`
-public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExprSyntaxNodeProtocol {
+public struct _CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExprSyntaxNodeProtocol {
   public let _syntaxNode: Syntax
   
   public init?(_ node: some SyntaxProtocol) {
-    guard node.raw.kind == .canImportExpr else {
+    guard node.raw.kind == ._canImportExpr else {
       return nil
     }
     self._syntaxNode = node._syntaxNode
@@ -43,7 +43,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       _ unexpectedBetweenLeftParenAndImportPath: UnexpectedNodesSyntax? = nil,
       importPath: TokenSyntax,
       _ unexpectedBetweenImportPathAndVersionInfo: UnexpectedNodesSyntax? = nil,
-      versionInfo: CanImportVersionInfoSyntax? = nil,
+      versionInfo: _CanImportVersionInfoSyntax? = nil,
       _ unexpectedBetweenVersionInfoAndRightParen: UnexpectedNodesSyntax? = nil,
       rightParen: TokenSyntax = .rightParenToken(),
       _ unexpectedAfterRightParen: UnexpectedNodesSyntax? = nil,
@@ -79,7 +79,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
           unexpectedAfterRightParen?.raw
         ]
       let raw = RawSyntax.makeLayout(
-        kind: SyntaxKind.canImportExpr,
+        kind: SyntaxKind._canImportExpr,
         from: layout,
         arena: arena,
         leadingTrivia: leadingTrivia,
@@ -95,7 +95,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 0)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 0, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 0, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -107,7 +107,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 1)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 1, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 1, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -116,7 +116,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 2)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 2, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 2, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -128,7 +128,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 3)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 3, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 3, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -137,7 +137,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 4)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 4, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 4, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -149,7 +149,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 5)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 5, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 5, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -158,16 +158,16 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 6)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 6, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 6, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
-  public var versionInfo: CanImportVersionInfoSyntax? {
+  public var versionInfo: _CanImportVersionInfoSyntax? {
     get {
-      return Syntax(self).child(at: 7)?.cast(CanImportVersionInfoSyntax.self)
+      return Syntax(self).child(at: 7)?.cast(_CanImportVersionInfoSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 7, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 7, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -176,7 +176,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 8)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 8, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 8, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -188,7 +188,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 9)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 9, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 9, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -197,7 +197,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
       return Syntax(self).child(at: 10)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 10, with: Syntax(value), arena: SyntaxArena()).cast(CanImportExprSyntax.self)
+      self = Syntax(self).replacingChild(at: 10, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportExprSyntax.self)
     }
   }
   
@@ -218,7 +218,7 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
   }
 }
 
-// MARK: - CanImportVersionInfoSyntax
+// MARK: - _CanImportVersionInfoSyntax
 
 /// ### Children
 /// 
@@ -229,12 +229,12 @@ public struct CanImportExprSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExpr
 ///
 /// ### Contained in
 /// 
-///  - ``CanImportExprSyntax``.``CanImportExprSyntax/versionInfo``
-public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExprSyntaxNodeProtocol {
+///  - `_CanImportExprSyntax`.`_CanImportExprSyntax/versionInfo`
+public struct _CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _LeafExprSyntaxNodeProtocol {
   public let _syntaxNode: Syntax
   
   public init?(_ node: some SyntaxProtocol) {
-    guard node.raw.kind == .canImportVersionInfo else {
+    guard node.raw.kind == ._canImportVersionInfo else {
       return nil
     }
     self._syntaxNode = node._syntaxNode
@@ -282,7 +282,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
           unexpectedAfterVersion?.raw
         ]
       let raw = RawSyntax.makeLayout(
-        kind: SyntaxKind.canImportVersionInfo,
+        kind: SyntaxKind._canImportVersionInfo,
         from: layout,
         arena: arena,
         leadingTrivia: leadingTrivia,
@@ -298,7 +298,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 0)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 0, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 0, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -310,7 +310,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 1)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 1, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 1, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -319,7 +319,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 2)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 2, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 2, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -333,7 +333,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 3)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 3, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 3, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -342,7 +342,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 4)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 4, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 4, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -354,7 +354,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 5)!.cast(TokenSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 5, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 5, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -363,7 +363,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 6)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 6, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 6, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -372,7 +372,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 7)!.cast(VersionTupleSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 7, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 7, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -381,7 +381,7 @@ public struct CanImportVersionInfoSyntax: ExprSyntaxProtocol, SyntaxHashable, _L
       return Syntax(self).child(at: 8)?.cast(UnexpectedNodesSyntax.self)
     }
     set(value) {
-      self = Syntax(self).replacingChild(at: 8, with: Syntax(value), arena: SyntaxArena()).cast(CanImportVersionInfoSyntax.self)
+      self = Syntax(self).replacingChild(at: 8, with: Syntax(value), arena: SyntaxArena()).cast(_CanImportVersionInfoSyntax.self)
     }
   }
   
@@ -4522,6 +4522,9 @@ public struct ConventionWitnessMethodAttributeArgumentsSyntax: SyntaxProtocol, S
   
   /// - Parameters:
   ///   - leadingTrivia: Trivia to be prepended to the leading trivia of the node’s first token. If the node is empty, there is no token to attach the trivia to and the parameter is ignored.
+  ///   - witnessMethodLabel: The `witnessMethod` label.
+  ///   - colon: The colon separating the `witnessMethod` label and the original protocol name.
+  ///   - protocolName: The original protocol name.
   ///   - trailingTrivia: Trivia to be appended to the trailing trivia of the node’s last token. If the node is empty, there is no token to attach the trivia to and the parameter is ignored.
   public init(
       leadingTrivia: Trivia? = nil,
@@ -4576,6 +4579,8 @@ public struct ConventionWitnessMethodAttributeArgumentsSyntax: SyntaxProtocol, S
     }
   }
   
+  /// The `witnessMethod` label.
+  ///
   /// ### Tokens
   /// 
   /// For syntax trees generated by the parser, this is guaranteed to be `witness_method`.
@@ -4597,6 +4602,8 @@ public struct ConventionWitnessMethodAttributeArgumentsSyntax: SyntaxProtocol, S
     }
   }
   
+  /// The colon separating the `witnessMethod` label and the original protocol name.
+  ///
   /// ### Tokens
   /// 
   /// For syntax trees generated by the parser, this is guaranteed to be `:`.
@@ -4618,6 +4625,8 @@ public struct ConventionWitnessMethodAttributeArgumentsSyntax: SyntaxProtocol, S
     }
   }
   
+  /// The original protocol name.
+  ///
   /// ### Tokens
   /// 
   /// For syntax trees generated by the parser, this is guaranteed to be `<identifier>`.

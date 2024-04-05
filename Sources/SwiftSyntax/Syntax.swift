@@ -14,10 +14,13 @@
 /// Each node has accessors for its known children, and allows efficient
 /// iteration over the children through its `children` property.
 public struct Syntax: SyntaxProtocol, SyntaxHashable {
-  fileprivate enum Info: Sendable {
-    case root(Root)
-    indirect case nonRoot(NonRoot)
-
+  /// We need a heap indirection to store a syntax node's parent. We could use an indirect enum here but explicitly
+  /// modelling it using a class allows us to re-use these heap-allocated objects in `SyntaxVisitor`.
+  ///
+  /// - Note: `@unchecked Sendable` because `info` is mutable. In Swift 6 and above the variable can be declared as
+  ///   `nonisolated(unsafe)` but that attribute doesn't exist in previous Swift versions and a checked Sendable
+  ///   conformance generates a warning.
+  final class Info: @unchecked Sendable {
     // For root node.
     struct Root: Sendable {
       private var arena: RetainedSyntaxArena
@@ -32,27 +35,54 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
       var parent: Syntax
       var absoluteInfo: AbsoluteSyntaxInfo
     }
+
+    enum InfoImpl: Sendable {
+      case root(Root)
+      case nonRoot(NonRoot)
+    }
+
+    init(_ info: InfoImpl) {
+      self.info = info
+    }
+
+    /// The actual stored information that references the parent or the tree's root.
+    ///
+    /// - Important: Must only be set to `nil` when `Syntax.Info` is used in a memory recycling pool
+    ///    (eg. in `SyntaxVisitor`). In that case the `Syntax.Info` is considered garbage memory that can be re-used
+    ///    later. `info` needs to be set to a real value when `Syntax.Info` is recycled from the memory recycling pool.
+    #if compiler(>=6.0)
+    nonisolated(unsafe) var info: InfoImpl!
+    #else
+    var info: InfoImpl!
+    #endif
   }
 
-  private let info: Info
+  /// Reference to the node's parent or, if this node is the root of a tree, a reference to the `SyntaxArena` to keep
+  /// the syntax tree alive.
+  ///
+  /// - Important: In almost all use cases you should not access this directly. Prefer accessors like `parent`.
+  /// - Important: Must only be set to `nil` when this `Syntax` node is known to get destroyed and the `Info` should be
+  ///   stored in a memory recycling pool (eg. in `SyntaxVisitor`). After setting `info` to `nil`, this `Syntax` node
+  ///   is considered garbage and should not be accessed anymore in any way.
+  var info: Info!
   let raw: RawSyntax
 
   private var rootInfo: Info.Root {
-    switch info {
+    switch info.info! {
     case .root(let info): return info
     case .nonRoot(let info): return info.parent.rootInfo
     }
   }
 
   private var nonRootInfo: Info.NonRoot? {
-    switch info {
+    switch info.info! {
     case .root(_): return nil
     case .nonRoot(let info): return info
     }
   }
 
   private var root: Syntax {
-    switch info {
+    switch info.info! {
     case .root(_): return self
     case .nonRoot(let info): return info.parent.root
     }
@@ -99,13 +129,13 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
   }
 
   /// "designated" memberwise initializer of `Syntax`.
-  private init(_ raw: RawSyntax, info: Info) {
+  init(_ raw: RawSyntax, info: Info) {
     self.raw = raw
     self.info = info
   }
 
   init(_ raw: RawSyntax, parent: Syntax, absoluteInfo: AbsoluteSyntaxInfo) {
-    self.init(raw, info: .nonRoot(.init(parent: parent, absoluteInfo: absoluteInfo)))
+    self.init(raw, info: Info(.nonRoot(.init(parent: parent, absoluteInfo: absoluteInfo))))
   }
 
   /// Creates a `Syntax` with the provided raw syntax and parent.
@@ -125,12 +155,12 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
   ///     has a chance to retain it.
   static func forRoot(_ raw: RawSyntax, rawNodeArena: RetainedSyntaxArena) -> Syntax {
     precondition(rawNodeArena == raw.arenaReference)
-    return Syntax(raw, info: .root(.init(arena: rawNodeArena)))
+    return Syntax(raw, info: Info(.root(.init(arena: rawNodeArena))))
   }
 
   static func forRoot(_ raw: RawSyntax, rawNodeArena: SyntaxArena) -> Syntax {
     precondition(rawNodeArena == raw.arenaReference)
-    return Syntax(raw, info: .root(.init(arena: RetainedSyntaxArena(rawNodeArena))))
+    return Syntax(raw, info: Info(.root(.init(arena: RetainedSyntaxArena(rawNodeArena)))))
   }
 
   /// Returns the child data at the provided index in this data's layout.
@@ -165,7 +195,12 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
     // If we have a parent already, then ask our current parent to copy itself
     // recursively up to the root.
     if let parent {
-      let newParent = parent.replacingChild(at: indexInParent, with: newRaw, rawNodeArena: rawNodeArena, allocationArena: allocationArena)
+      let newParent = parent.replacingChild(
+        at: indexInParent,
+        with: newRaw,
+        rawNodeArena: rawNodeArena,
+        allocationArena: allocationArena
+      )
       return Syntax(absoluteRaw.replacingSelf(newRaw, newRootId: newParent.id.rootId), parent: newParent)
     } else {
       // Otherwise, we're already the root, so return the new root data.
@@ -185,7 +220,12 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
   /// - Returns: The new root node created by this operation, and the new child
   ///            syntax data.
   /// - SeeAlso: replacingSelf(_:)
-  func replacingChild(at index: Int, with newChild: RawSyntax?, rawNodeArena: RetainedSyntaxArena?, allocationArena: SyntaxArena) -> Syntax {
+  func replacingChild(
+    at index: Int,
+    with newChild: RawSyntax?,
+    rawNodeArena: RetainedSyntaxArena?,
+    allocationArena: SyntaxArena
+  ) -> Syntax {
     precondition(newChild == nil || (rawNodeArena != nil && newChild!.arenaReference == rawNodeArena!))
     // After newRaw has been allocated in `allocationArena`, `rawNodeArena` will
     // be a child arena of `allocationArena` and thus, `allocationArena` will
@@ -197,8 +237,18 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
   }
 
   /// Same as `replacingChild(at:with:rawNodeArena:allocationArena:)` but takes a `__SyntaxArena` instead of a `RetainedSyntaxArena`.
-  func replacingChild(at index: Int, with newChild: RawSyntax?, rawNodeArena: SyntaxArena?, allocationArena: SyntaxArena) -> Syntax {
-    return self.replacingChild(at: index, with: newChild, rawNodeArena: rawNodeArena.map(RetainedSyntaxArena.init), allocationArena: allocationArena)
+  func replacingChild(
+    at index: Int,
+    with newChild: RawSyntax?,
+    rawNodeArena: SyntaxArena?,
+    allocationArena: SyntaxArena
+  ) -> Syntax {
+    return self.replacingChild(
+      at: index,
+      with: newChild,
+      rawNodeArena: rawNodeArena.map(RetainedSyntaxArena.init),
+      allocationArena: allocationArena
+    )
   }
 
   /// Identical to `replacingChild(at: Int, with: RawSyntax?, arena: SyntaxArena)`
@@ -206,7 +256,12 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
   /// `newChild` has been addded to the result.
   func replacingChild(at index: Int, with newChild: Syntax?, arena: SyntaxArena) -> Syntax {
     return withExtendedLifetime(newChild) {
-      return replacingChild(at: index, with: newChild?.raw, rawNodeArena: newChild?.raw.arenaReference.retained, allocationArena: arena)
+      return replacingChild(
+        at: index,
+        with: newChild?.raw,
+        rawNodeArena: newChild?.raw.arenaReference.retained,
+        allocationArena: arena
+      )
     }
   }
 
@@ -252,6 +307,9 @@ public struct Syntax: SyntaxProtocol, SyntaxHashable {
   }
 
   /// Create a ``Syntax`` node from a specialized syntax node.
+  // Inline always so the optimizer can optimize this to a member access on `syntax` without having to go through
+  // generics.
+  @inline(__always)
   public init(_ syntax: some SyntaxProtocol) {
     self = syntax._syntaxNode
   }

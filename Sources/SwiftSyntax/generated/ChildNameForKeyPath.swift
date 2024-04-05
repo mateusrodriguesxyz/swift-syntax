@@ -239,12 +239,12 @@ public func childName(_ keyPath: AnyKeyPath) -> String? {
     return "rightParen"
   case \AttributeSyntax.unexpectedAfterRightParen:
     return "unexpectedAfterRightParen"
-  case \AttributedTypeSyntax.unexpectedBeforeSpecifier:
-    return "unexpectedBeforeSpecifier"
-  case \AttributedTypeSyntax.specifier:
-    return "specifier"
-  case \AttributedTypeSyntax.unexpectedBetweenSpecifierAndAttributes:
-    return "unexpectedBetweenSpecifierAndAttributes"
+  case \AttributedTypeSyntax.unexpectedBeforeSpecifiers:
+    return "unexpectedBeforeSpecifiers"
+  case \AttributedTypeSyntax.specifiers:
+    return "specifiers"
+  case \AttributedTypeSyntax.unexpectedBetweenSpecifiersAndAttributes:
+    return "unexpectedBetweenSpecifiersAndAttributes"
   case \AttributedTypeSyntax.attributes:
     return "attributes"
   case \AttributedTypeSyntax.unexpectedBetweenAttributesAndBaseType:
@@ -351,45 +351,45 @@ public func childName(_ keyPath: AnyKeyPath) -> String? {
     return "label"
   case \BreakStmtSyntax.unexpectedAfterLabel:
     return "unexpectedAfterLabel"
-  case \CanImportExprSyntax.unexpectedBeforeCanImportKeyword:
+  case \_CanImportExprSyntax.unexpectedBeforeCanImportKeyword:
     return "unexpectedBeforeCanImportKeyword"
-  case \CanImportExprSyntax.canImportKeyword:
+  case \_CanImportExprSyntax.canImportKeyword:
     return "canImportKeyword"
-  case \CanImportExprSyntax.unexpectedBetweenCanImportKeywordAndLeftParen:
+  case \_CanImportExprSyntax.unexpectedBetweenCanImportKeywordAndLeftParen:
     return "unexpectedBetweenCanImportKeywordAndLeftParen"
-  case \CanImportExprSyntax.leftParen:
+  case \_CanImportExprSyntax.leftParen:
     return "leftParen"
-  case \CanImportExprSyntax.unexpectedBetweenLeftParenAndImportPath:
+  case \_CanImportExprSyntax.unexpectedBetweenLeftParenAndImportPath:
     return "unexpectedBetweenLeftParenAndImportPath"
-  case \CanImportExprSyntax.importPath:
+  case \_CanImportExprSyntax.importPath:
     return "importPath"
-  case \CanImportExprSyntax.unexpectedBetweenImportPathAndVersionInfo:
+  case \_CanImportExprSyntax.unexpectedBetweenImportPathAndVersionInfo:
     return "unexpectedBetweenImportPathAndVersionInfo"
-  case \CanImportExprSyntax.versionInfo:
+  case \_CanImportExprSyntax.versionInfo:
     return "versionInfo"
-  case \CanImportExprSyntax.unexpectedBetweenVersionInfoAndRightParen:
+  case \_CanImportExprSyntax.unexpectedBetweenVersionInfoAndRightParen:
     return "unexpectedBetweenVersionInfoAndRightParen"
-  case \CanImportExprSyntax.rightParen:
+  case \_CanImportExprSyntax.rightParen:
     return "rightParen"
-  case \CanImportExprSyntax.unexpectedAfterRightParen:
+  case \_CanImportExprSyntax.unexpectedAfterRightParen:
     return "unexpectedAfterRightParen"
-  case \CanImportVersionInfoSyntax.unexpectedBeforeComma:
+  case \_CanImportVersionInfoSyntax.unexpectedBeforeComma:
     return "unexpectedBeforeComma"
-  case \CanImportVersionInfoSyntax.comma:
+  case \_CanImportVersionInfoSyntax.comma:
     return "comma"
-  case \CanImportVersionInfoSyntax.unexpectedBetweenCommaAndLabel:
+  case \_CanImportVersionInfoSyntax.unexpectedBetweenCommaAndLabel:
     return "unexpectedBetweenCommaAndLabel"
-  case \CanImportVersionInfoSyntax.label:
+  case \_CanImportVersionInfoSyntax.label:
     return "label"
-  case \CanImportVersionInfoSyntax.unexpectedBetweenLabelAndColon:
+  case \_CanImportVersionInfoSyntax.unexpectedBetweenLabelAndColon:
     return "unexpectedBetweenLabelAndColon"
-  case \CanImportVersionInfoSyntax.colon:
+  case \_CanImportVersionInfoSyntax.colon:
     return "colon"
-  case \CanImportVersionInfoSyntax.unexpectedBetweenColonAndVersion:
+  case \_CanImportVersionInfoSyntax.unexpectedBetweenColonAndVersion:
     return "unexpectedBetweenColonAndVersion"
-  case \CanImportVersionInfoSyntax.version:
+  case \_CanImportVersionInfoSyntax.version:
     return "version"
-  case \CanImportVersionInfoSyntax.unexpectedAfterVersion:
+  case \_CanImportVersionInfoSyntax.unexpectedAfterVersion:
     return "unexpectedAfterVersion"
   case \CatchClauseSyntax.unexpectedBeforeCatchKeyword:
     return "unexpectedBeforeCatchKeyword"
@@ -1999,6 +1999,38 @@ public func childName(_ keyPath: AnyKeyPath) -> String? {
     return "rightParen"
   case \LayoutRequirementSyntax.unexpectedAfterRightParen:
     return "unexpectedAfterRightParen"
+  case \LifetimeSpecifierArgumentSyntax.unexpectedBeforeParameter:
+    return "unexpectedBeforeParameter"
+  case \LifetimeSpecifierArgumentSyntax.parameter:
+    return "parameter"
+  case \LifetimeSpecifierArgumentSyntax.unexpectedBetweenParameterAndTrailingComma:
+    return "unexpectedBetweenParameterAndTrailingComma"
+  case \LifetimeSpecifierArgumentSyntax.trailingComma:
+    return "trailingComma"
+  case \LifetimeSpecifierArgumentSyntax.unexpectedAfterTrailingComma:
+    return "unexpectedAfterTrailingComma"
+  case \LifetimeTypeSpecifierSyntax.unexpectedBeforeDependsOnKeyword:
+    return "unexpectedBeforeDependsOnKeyword"
+  case \LifetimeTypeSpecifierSyntax.dependsOnKeyword:
+    return "dependsOnKeyword"
+  case \LifetimeTypeSpecifierSyntax.unexpectedBetweenDependsOnKeywordAndLeftParen:
+    return "unexpectedBetweenDependsOnKeywordAndLeftParen"
+  case \LifetimeTypeSpecifierSyntax.leftParen:
+    return "leftParen"
+  case \LifetimeTypeSpecifierSyntax.unexpectedBetweenLeftParenAndScopedKeyword:
+    return "unexpectedBetweenLeftParenAndScopedKeyword"
+  case \LifetimeTypeSpecifierSyntax.scopedKeyword:
+    return "scopedKeyword"
+  case \LifetimeTypeSpecifierSyntax.unexpectedBetweenScopedKeywordAndArguments:
+    return "unexpectedBetweenScopedKeywordAndArguments"
+  case \LifetimeTypeSpecifierSyntax.arguments:
+    return "arguments"
+  case \LifetimeTypeSpecifierSyntax.unexpectedBetweenArgumentsAndRightParen:
+    return "unexpectedBetweenArgumentsAndRightParen"
+  case \LifetimeTypeSpecifierSyntax.rightParen:
+    return "rightParen"
+  case \LifetimeTypeSpecifierSyntax.unexpectedAfterRightParen:
+    return "unexpectedAfterRightParen"
   case \MacroDeclSyntax.unexpectedBeforeAttributes:
     return "unexpectedBeforeAttributes"
   case \MacroDeclSyntax.attributes:
@@ -2787,6 +2819,12 @@ public func childName(_ keyPath: AnyKeyPath) -> String? {
     return "closingQuote"
   case \SimpleStringLiteralExprSyntax.unexpectedAfterClosingQuote:
     return "unexpectedAfterClosingQuote"
+  case \SimpleTypeSpecifierSyntax.unexpectedBeforeSpecifier:
+    return "unexpectedBeforeSpecifier"
+  case \SimpleTypeSpecifierSyntax.specifier:
+    return "specifier"
+  case \SimpleTypeSpecifierSyntax.unexpectedAfterSpecifier:
+    return "unexpectedAfterSpecifier"
   case \SomeOrAnyTypeSyntax.unexpectedBeforeSomeOrAnySpecifier:
     return "unexpectedBeforeSomeOrAnySpecifier"
   case \SomeOrAnyTypeSyntax.someOrAnySpecifier:

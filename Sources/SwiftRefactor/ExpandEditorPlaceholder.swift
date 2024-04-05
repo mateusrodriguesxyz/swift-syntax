@@ -10,10 +10,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+import SwiftBasicFormat
+import SwiftParser
+public import SwiftSyntax
+import SwiftSyntaxBuilder
+#else
 import SwiftBasicFormat
 import SwiftParser
 import SwiftSyntax
 import SwiftSyntaxBuilder
+#endif
 
 /// Expands an editor placeholder, taking into accounts its provided type
 /// information (if any).
@@ -70,7 +77,17 @@ import SwiftSyntaxBuilder
 /// anything here
 /// ```
 struct ExpandSingleEditorPlaceholder: EditRefactoringProvider {
-  static func textRefactor(syntax token: TokenSyntax, in context: Void) -> [SourceEdit] {
+  struct Context {
+    let indentationWidth: Trivia?
+    let initialIndentation: Trivia
+
+    init(indentationWidth: Trivia? = nil, initialIndentation: Trivia = []) {
+      self.indentationWidth = indentationWidth
+      self.initialIndentation = initialIndentation
+    }
+  }
+
+  static func textRefactor(syntax token: TokenSyntax, in context: Context = Context()) -> [SourceEdit] {
     guard let placeholder = EditorPlaceholderData(token: token) else {
       return []
     }
@@ -81,13 +98,26 @@ struct ExpandSingleEditorPlaceholder: EditRefactoringProvider {
       expanded = String(text)
     case let .typed(text, type):
       if let functionType = type.as(FunctionTypeSyntax.self) {
-        expanded = functionType.closureExpansion.formatted().description
+        let basicFormat = BasicFormat(
+          indentationWidth: context.indentationWidth,
+          initialIndentation: context.initialIndentation
+        )
+        var formattedExpansion = functionType.closureExpansion.formatted(using: basicFormat).description
+        // Strip the initial indentation from the placeholder itself. We only introduced the initial indentation to
+        // format consecutive lines. We don't want it at the front of the initial line because it replaces an expression
+        // that might be in the middle of a line.
+        if formattedExpansion.hasPrefix(context.initialIndentation.description) {
+          formattedExpansion = String(formattedExpansion.dropFirst(context.initialIndentation.description.count))
+        }
+        expanded = formattedExpansion
       } else {
         expanded = String(text)
       }
     }
 
-    return [SourceEdit.replace(token, with: token.leadingTrivia.description + expanded + token.trailingTrivia.description)]
+    return [
+      SourceEdit.replace(token, with: token.leadingTrivia.description + expanded + token.trailingTrivia.description)
+    ]
   }
 }
 
@@ -122,13 +152,25 @@ struct ExpandSingleEditorPlaceholder: EditRefactoringProvider {
 ///
 /// Expansion on `closure1` and `normalArg` is the same as `ExpandSingleEditorPlaceholder`.
 public struct ExpandEditorPlaceholder: EditRefactoringProvider {
-  public static func textRefactor(syntax token: TokenSyntax, in context: Void) -> [SourceEdit] {
+  public struct Context {
+    public let indentationWidth: Trivia?
+
+    public init(indentationWidth: Trivia? = nil) {
+      self.indentationWidth = indentationWidth
+    }
+  }
+
+  public static func textRefactor(syntax token: TokenSyntax, in context: Context = Context()) -> [SourceEdit] {
     guard let placeholder = token.parent?.as(DeclReferenceExprSyntax.self),
       placeholder.baseName.isEditorPlaceholder,
       let arg = placeholder.parent?.as(LabeledExprSyntax.self),
       let argList = arg.parent?.as(LabeledExprListSyntax.self),
       let call = argList.parent?.as(FunctionCallExprSyntax.self),
-      let expandedTrailingClosures = ExpandEditorPlaceholdersToTrailingClosures.expandTrailingClosurePlaceholders(in: call, ifIncluded: arg)
+      let expandedTrailingClosures = ExpandEditorPlaceholdersToTrailingClosures.expandTrailingClosurePlaceholders(
+        in: call,
+        ifIncluded: arg,
+        indentationWidth: context.indentationWidth
+      )
     else {
       return ExpandSingleEditorPlaceholder.textRefactor(syntax: token)
     }
@@ -159,8 +201,19 @@ public struct ExpandEditorPlaceholder: EditRefactoringProvider {
 /// }
 /// ```
 public struct ExpandEditorPlaceholdersToTrailingClosures: SyntaxRefactoringProvider {
-  public static func refactor(syntax call: FunctionCallExprSyntax, in context: Void = ()) -> FunctionCallExprSyntax? {
-    return Self.expandTrailingClosurePlaceholders(in: call, ifIncluded: nil)
+  public struct Context {
+    public let indentationWidth: Trivia?
+
+    public init(indentationWidth: Trivia? = nil) {
+      self.indentationWidth = indentationWidth
+    }
+  }
+
+  public static func refactor(
+    syntax call: FunctionCallExprSyntax,
+    in context: Context = Context()
+  ) -> FunctionCallExprSyntax? {
+    return Self.expandTrailingClosurePlaceholders(in: call, ifIncluded: nil, indentationWidth: context.indentationWidth)
   }
 
   /// If the given argument is `nil` or one of the last arguments that are all
@@ -170,13 +223,17 @@ public struct ExpandEditorPlaceholdersToTrailingClosures: SyntaxRefactoringProvi
   /// Otherwise return nil.
   fileprivate static func expandTrailingClosurePlaceholders(
     in call: FunctionCallExprSyntax,
-    ifIncluded arg: LabeledExprSyntax?
+    ifIncluded arg: LabeledExprSyntax?,
+    indentationWidth: Trivia?
   ) -> FunctionCallExprSyntax? {
-    guard let expanded = call.expandTrailingClosurePlaceholders(ifIncluded: arg) else {
+    guard let expanded = call.expandTrailingClosurePlaceholders(ifIncluded: arg, indentationWidth: indentationWidth)
+    else {
       return nil
     }
 
-    let callToTrailingContext = CallToTrailingClosures.Context(startAtArgument: call.arguments.count - expanded.numClosures)
+    let callToTrailingContext = CallToTrailingClosures.Context(
+      startAtArgument: call.arguments.count - expanded.numClosures
+    )
     guard let trailing = CallToTrailingClosures.refactor(syntax: expanded.expr, in: callToTrailingContext) else {
       return nil
     }
@@ -260,7 +317,8 @@ extension FunctionCallExprSyntax {
   /// closures based on the function types provided by each editor placeholder.
   /// Otherwise return nil.
   fileprivate func expandTrailingClosurePlaceholders(
-    ifIncluded: LabeledExprSyntax?
+    ifIncluded: LabeledExprSyntax?,
+    indentationWidth: Trivia?
   ) -> (expr: FunctionCallExprSyntax, numClosures: Int)? {
     var includedArg = false
     var argsToExpand = 0
@@ -283,9 +341,17 @@ extension FunctionCallExprSyntax {
       return nil
     }
 
+    let lineIndentation = self.firstToken(viewMode: .sourceAccurate)?.indentationOfLine ?? []
+
     var expandedArgs = [LabeledExprSyntax]()
     for arg in arguments.suffix(argsToExpand) {
-      let edits = ExpandSingleEditorPlaceholder.textRefactor(syntax: arg.expression.cast(DeclReferenceExprSyntax.self).baseName)
+      let edits = ExpandSingleEditorPlaceholder.textRefactor(
+        syntax: arg.expression.cast(DeclReferenceExprSyntax.self).baseName,
+        in: ExpandSingleEditorPlaceholder.Context(
+          indentationWidth: indentationWidth,
+          initialIndentation: lineIndentation
+        )
+      )
       guard edits.count == 1, let edit = edits.first, !edit.replacement.isEmpty else {
         return nil
       }
@@ -316,16 +382,21 @@ extension FunctionCallExprSyntax {
 /// NOTE: It is required that '##' is not a valid substring of display-string
 /// or type-string. If this ends up not the case for some reason, we can consider
 /// adding escaping for '##'.
-fileprivate enum EditorPlaceholderData {
+@_spi(SourceKitLSP)
+public enum EditorPlaceholderData {
   case basic(text: Substring)
   case typed(text: Substring, type: TypeSyntax)
 
   init?(token: TokenSyntax) {
-    guard isPlaceholder(token.text) else {
+    self.init(text: token.text)
+  }
+
+  @_spi(SourceKitLSP)
+  public init?(text: String) {
+    guard isPlaceholder(text) else {
       return nil
     }
-
-    var text = token.text.dropFirst(2).dropLast(2)
+    var text = text.dropFirst(2).dropLast(2)
 
     if !text.hasPrefix("T##") {
       // No type information

@@ -10,10 +10,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+public import SwiftDiagnostics
+import SwiftOperators
+public import SwiftSyntax
+public import SwiftSyntaxMacros
+#else
 import SwiftDiagnostics
 import SwiftOperators
 import SwiftSyntax
 import SwiftSyntaxMacros
+#endif
 
 /// An implementation of the `MacroExpansionContext` protocol that is
 /// suitable for testing purposes.
@@ -223,6 +230,11 @@ extension BasicMacroExpansionContext: MacroExpansionContext {
 
     case .filePath:
       fileName = knownRoot.fullFilePath
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
 
     // Find the node's offset relative to its root.
@@ -239,6 +251,11 @@ extension BasicMacroExpansionContext: MacroExpansionContext {
 
     case .afterTrailingTrivia:
       rawPosition = node.endPosition
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
 
     // Do the location lookup.

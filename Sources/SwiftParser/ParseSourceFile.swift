@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+@_spi(RawSyntax) public import SwiftSyntax
+#else
 @_spi(RawSyntax) import SwiftSyntax
+#endif
 
 extension Parser {
   /// Parse the source code in the given string as Swift source file. See
@@ -85,7 +89,11 @@ extension Parser {
     maximumNestingLevel: Int? = nil,
     parseTransition: IncrementalParseTransition?
   ) -> (tree: SourceFileSyntax, lookaheadRanges: LookaheadRanges) {
-    let parseResult = parseIncrementally(source: source, maximumNestingLevel: maximumNestingLevel, parseTransition: parseTransition)
+    let parseResult = parseIncrementally(
+      source: source,
+      maximumNestingLevel: maximumNestingLevel,
+      parseTransition: parseTransition
+    )
     return (parseResult.tree, parseResult.lookaheadRanges)
   }
 

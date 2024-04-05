@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+public import SwiftSyntax
+#else
 import SwiftSyntax
+#endif
 
 /// The location of a declaration name, resolved by ``NameMatcher`` and that can
 /// be used to rename the declaration name and, if it is a function, its
@@ -113,7 +117,10 @@ public struct DeclNameLocation: Equatable {
       case .noArguments:
         return .noArguments
       case .call(let arguments, firstTrailingClosureIndex: let firstTrailingClosureIndex):
-        return .call(arguments.map { $0.advanced(by: utf8Offset) }, firstTrailingClosureIndex: firstTrailingClosureIndex)
+        return .call(
+          arguments.map { $0.advanced(by: utf8Offset) },
+          firstTrailingClosureIndex: firstTrailingClosureIndex
+        )
       case .parameters(let parameters):
         return .parameters(parameters.map { $0.advanced(by: utf8Offset) })
       case .noncollapsibleParameters(let parameters):

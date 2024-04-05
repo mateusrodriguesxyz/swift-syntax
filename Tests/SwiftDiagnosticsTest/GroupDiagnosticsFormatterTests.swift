@@ -26,7 +26,7 @@ extension GroupedDiagnostics {
     displayName: String,
     parent: (SourceFileID, AbsolutePosition)? = nil,
     diagnosticDescriptors: [DiagnosticDescriptor],
-    file: StaticString = #file,
+    file: StaticString = #filePath,
     line: UInt = #line
   ) -> (SourceFileID, [String: AbsolutePosition]) {
     let (markers, source) = extractMarkers(markedSource)
@@ -77,9 +77,9 @@ final class GroupedDiagnosticsFormatterTests: XCTestCase {
       annotated,
       """
       other.swift:123:17: error: consecutive statements on a line must be separated by newline or ';'
-      1 │ #sourceLocation(file: "other.swift", line: 123)
-      2 │ let pi = 3.14159 x
-        │                 ╰─ error: consecutive statements on a line must be separated by newline or ';'
+      1 | #sourceLocation(file: "other.swift", line: 123)
+      2 | let pi = 3.14159 x
+        |                 `- error: consecutive statements on a line must be separated by newline or ';'
 
       """
     )
@@ -134,20 +134,20 @@ final class GroupedDiagnosticsFormatterTests: XCTestCase {
       annotated,
       """
       main.swift:6:14: error: expected ')' to end function call
-      3 │ // test
-      4 │ let pi = 3.14159
-      5 │ #myAssert(pi == 3)
-        │ ╰─ note: in expansion of macro 'myAssert' here
-        ╭─── #myAssert ───────────────────────────────────────────────────────
-        │1 │ let __a = pi
-        │2 │ let __b = 3
-        │3 │ if !(__a == __b) {
-        │  │          ╰─ error: no matching operator '==' for types 'Double' and 'Int'
-        │4 │   fatalError("assertion failed: pi != 3")
-        │5 │ }
-        ╰─────────────────────────────────────────────────────────────────────
-      6 │ print("hello"
-        │              ╰─ error: expected ')' to end function call
+      3 | // test
+      4 | let pi = 3.14159
+      5 | #myAssert(pi == 3)
+        | `- note: in expansion of macro 'myAssert' here
+        +--- #myAssert -------------------------------------------------------
+        |1 | let __a = pi
+        |2 | let __b = 3
+        |3 | if !(__a == __b) {
+        |  |          `- error: no matching operator '==' for types 'Double' and 'Int'
+        |4 |   fatalError("assertion failed: pi != 3")
+        |5 | }
+        +---------------------------------------------------------------------
+      6 | print("hello"
+        |              `- error: expected ')' to end function call
 
       """
     )
@@ -182,7 +182,11 @@ final class GroupedDiagnosticsFormatterTests: XCTestCase {
       displayName: "#myAssert",
       parent: (mainSourceID, inExpansionNotePos),
       diagnosticDescriptors: [
-        DiagnosticDescriptor(locationMarker: "1️⃣", message: "in expansion of macro 'invertedEqualityCheck' here", severity: .note)
+        DiagnosticDescriptor(
+          locationMarker: "1️⃣",
+          message: "in expansion of macro 'invertedEqualityCheck' here",
+          severity: .note
+        )
       ]
     )
     let inInnerExpansionNotePos = outerExpansionSourceMarkers["1️⃣"]!
@@ -195,7 +199,11 @@ final class GroupedDiagnosticsFormatterTests: XCTestCase {
       displayName: "#invertedEqualityCheck",
       parent: (outerExpansionSourceID, inInnerExpansionNotePos),
       diagnosticDescriptors: [
-        DiagnosticDescriptor(locationMarker: "1️⃣", message: "no matching operator '==' for types 'Double' and 'Int'", severity: .error)
+        DiagnosticDescriptor(
+          locationMarker: "1️⃣",
+          message: "no matching operator '==' for types 'Double' and 'Int'",
+          severity: .error
+        )
       ]
     )
 
@@ -204,23 +212,23 @@ final class GroupedDiagnosticsFormatterTests: XCTestCase {
       annotated,
       """
       #invertedEqualityCheck:1:7: error: no matching operator '==' for types 'Double' and 'Int'
-      ╰─ main.swift:2:1: note: expanded code originates here
-      1 │ let pi = 3.14159
-      2 │ #myAssert(pi == 3)
-        │ ╰─ note: in expansion of macro 'myAssert' here
-        ╭─── #myAssert ───────────────────────────────────────────────────────
-        │1 │ let __a = pi
-        │2 │ let __b = 3
-        │3 │ if #invertedEqualityCheck(__a, __b) {
-        │  │    ╰─ note: in expansion of macro 'invertedEqualityCheck' here
-        │  ╭─── #invertedEqualityCheck ───────────────────────────────────────
-        │  │1 │ !(__a == __b)
-        │  │  │       ╰─ error: no matching operator '==' for types 'Double' and 'Int'
-        │  ╰──────────────────────────────────────────────────────────────────
-        │4 │   fatalError("assertion failed: pi != 3")
-        │5 │ }
-        ╰─────────────────────────────────────────────────────────────────────
-      3 │ print("hello")
+      `- main.swift:2:1: note: expanded code originates here
+      1 | let pi = 3.14159
+      2 | #myAssert(pi == 3)
+        | `- note: in expansion of macro 'myAssert' here
+        +--- #myAssert -------------------------------------------------------
+        |1 | let __a = pi
+        |2 | let __b = 3
+        |3 | if #invertedEqualityCheck(__a, __b) {
+        |  |    `- note: in expansion of macro 'invertedEqualityCheck' here
+        |  +--- #invertedEqualityCheck ---------------------------------------
+        |  |1 | !(__a == __b)
+        |  |  |       `- error: no matching operator '==' for types 'Double' and 'Int'
+        |  +------------------------------------------------------------------
+        |4 |   fatalError("assertion failed: pi != 3")
+        |5 | }
+        +---------------------------------------------------------------------
+      3 | print("hello")
 
       """
     )

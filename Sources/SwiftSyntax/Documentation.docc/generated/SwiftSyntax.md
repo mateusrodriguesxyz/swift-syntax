@@ -102,8 +102,6 @@ These articles are intended for developers wishing to contribute to SwiftSyntax
 - <doc:SwiftSyntax/BinaryOperatorExprSyntax>
 - <doc:SwiftSyntax/BooleanLiteralExprSyntax>
 - <doc:SwiftSyntax/BorrowExprSyntax>
-- <doc:SwiftSyntax/CanImportExprSyntax>
-- <doc:SwiftSyntax/CanImportVersionInfoSyntax>
 - <doc:SwiftSyntax/ClosureExprSyntax>
 - <doc:SwiftSyntax/ConsumeExprSyntax>
 - <doc:SwiftSyntax/CopyExprSyntax>
@@ -301,6 +299,8 @@ These articles are intended for developers wishing to contribute to SwiftSyntax
 - <doc:SwiftSyntax/TuplePatternElementSyntax>
 - <doc:SwiftSyntax/TupleTypeElementListSyntax>
 - <doc:SwiftSyntax/TupleTypeElementSyntax>
+- <doc:SwiftSyntax/TypeSpecifierListSyntax>
+- <doc:SwiftSyntax/SimpleTypeSpecifierSyntax>
 - <doc:SwiftSyntax/UnexpectedNodesSyntax>
 - <doc:SwiftSyntax/VersionComponentListSyntax>
 - <doc:SwiftSyntax/VersionComponentSyntax>

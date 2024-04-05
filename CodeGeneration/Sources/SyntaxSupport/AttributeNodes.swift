@@ -180,7 +180,11 @@ public let ATTRIBUTE_NODES: [Node] = [
       Child(
         name: "availabilityArguments",
         deprecatedName: "availabilityList",
-        kind: .collection(kind: .availabilityArgumentList, collectionElementName: "AvailabilityArgument", deprecatedCollectionElementName: "Availability")
+        kind: .collection(
+          kind: .availabilityArgumentList,
+          collectionElementName: "AvailabilityArgument",
+          deprecatedCollectionElementName: "Availability"
+        )
       ),
       Child(
         name: "semicolon",
@@ -199,7 +203,8 @@ public let ATTRIBUTE_NODES: [Node] = [
       Child(
         name: "platformVersion",
         deprecatedName: "availabilityVersionRestriction",
-        kind: .node(kind: .platformVersion)
+        kind: .node(kind: .platformVersion),
+        documentation: "The platform/version pair, e.g. `iOS 10.1`"
       ),
       Child(
         name: "trailingComma",
@@ -236,7 +241,11 @@ public let ATTRIBUTE_NODES: [Node] = [
       Child(
         name: "platforms",
         deprecatedName: "versionList",
-        kind: .collection(kind: .platformVersionItemList, collectionElementName: "Platform", deprecatedCollectionElementName: "Availability"),
+        kind: .collection(
+          kind: .platformVersionItemList,
+          collectionElementName: "Platform",
+          deprecatedCollectionElementName: "Availability"
+        ),
         documentation: "The list of OS versions in which the declaration became ABI stable."
       ),
     ]
@@ -284,15 +293,19 @@ public let ATTRIBUTE_NODES: [Node] = [
     children: [
       Child(
         name: "witnessMethodLabel",
-        kind: .token(choices: [.keyword(.witness_method)])
+        kind: .token(choices: [.keyword(.witness_method)]),
+        documentation: #"The `witnessMethod` label."#
       ),
       Child(
         name: "colon",
-        kind: .token(choices: [.token(.colon)])
+        kind: .token(choices: [.token(.colon)]),
+        documentation: #"The colon separating the `witnessMethod` label and the original protocol name."#
+
       ),
       Child(
         name: "protocolName",
-        kind: .token(choices: [.token(.identifier)])
+        kind: .token(choices: [.token(.identifier)]),
+        documentation: "The original protocol name."
       ),
     ]
   ),
@@ -357,7 +370,8 @@ public let ATTRIBUTE_NODES: [Node] = [
     kind: .differentiabilityArgument,
     base: .syntax,
     nameForDiagnostics: "differentiability argument",
-    documentation: "A differentiability argument: either the \"self\" identifier, a function parameter name, or a function parameter index.",
+    documentation:
+      "A differentiability argument: either the \"self\" identifier, a function parameter name, or a function parameter index.",
     traits: [
       "WithTrailingComma"
     ],
@@ -445,6 +459,7 @@ public let ATTRIBUTE_NODES: [Node] = [
         name: "kindSpecifier",
         deprecatedName: "diffKind",
         kind: .token(choices: [.keyword(._forward), .keyword(.reverse), .keyword(._linear)]),
+        documentation: "The differentiability kind, if it exists.",
         isOptional: true
       ),
       Child(
@@ -458,6 +473,7 @@ public let ATTRIBUTE_NODES: [Node] = [
         name: "arguments",
         deprecatedName: "diffParams",
         kind: .node(kind: .differentiabilityWithRespectToArgument),
+        documentation: "The differentiability arguments, if any exists.",
         isOptional: true
       ),
       Child(
@@ -471,7 +487,8 @@ public let ATTRIBUTE_NODES: [Node] = [
         name: "genericWhereClause",
         deprecatedName: "whereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation: "A `where` clause that places additional constraints on generic parameters like `where T: Differentiable`.",
+        documentation:
+          "A `where` clause that places additional constraints on generic parameters like `where T: Differentiable`.",
         isOptional: true
       ),
     ]
@@ -588,7 +605,8 @@ public let ATTRIBUTE_NODES: [Node] = [
     kind: .implementsAttributeArguments,
     base: .syntax,
     nameForDiagnostics: "@_implements arguemnts",
-    documentation: "The arguments for the `@_implements` attribute of the form `Type, methodName(arg1Label:arg2Label:)`",
+    documentation:
+      "The arguments for the `@_implements` attribute of the form `Type, methodName(arg1Label:arg2Label:)`",
     children: [
       Child(
         name: "type",
@@ -664,11 +682,13 @@ public let ATTRIBUTE_NODES: [Node] = [
         name: "name",
         kind: .node(kind: .token),
         nameForDiagnostics: "name",
+        documentation: "The identifier name for a nullary selection, if it exists.",
         isOptional: true
       ),
       Child(
         name: "colon",
         kind: .token(choices: [.token(.colon)]),
+        documentation: "The colon separating the label and the value or a colon representing an unlabeled argument",
         isOptional: true
       ),
     ]
@@ -738,14 +758,18 @@ public let ATTRIBUTE_NODES: [Node] = [
     base: .syntaxCollection,
     nameForDiagnostics: "argument to '@_specialize",
     documentation: "A collection of arguments for the `@_specialize` attribute",
-    elementChoices: [.labeledSpecializeArgument, .specializeAvailabilityArgument, .specializeTargetFunctionArgument, .genericWhereClause]
+    elementChoices: [
+      .labeledSpecializeArgument, .specializeAvailabilityArgument, .specializeTargetFunctionArgument,
+      .genericWhereClause,
+    ]
   ),
 
   Node(
     kind: .specializeTargetFunctionArgument,
     base: .syntax,
     nameForDiagnostics: "attribute argument",
-    documentation: "A labeled argument for the `@_specialize` attribute with a function decl value like `target: myFunc(_:)`",
+    documentation:
+      "A labeled argument for the `@_specialize` attribute with a function decl value like `target: myFunc(_:)`",
     traits: [
       "WithTrailingComma"
     ],

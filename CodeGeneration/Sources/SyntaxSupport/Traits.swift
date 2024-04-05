@@ -47,11 +47,20 @@ public let TRAITS: [Trait] = [
     children: [
       Child(name: "attributes", kind: .node(kind: .attributeList)),
       Child(name: "modifiers", kind: .node(kind: .declModifierList)),
+      Child(
+        name: "introducer",
+        kind: .token(choices: [
+          .keyword(.actor), .keyword(.class), .keyword(.enum), .keyword(.extension), .keyword(.protocol),
+          .keyword(.struct),
+        ]),
+        documentation: "The token that introduces this declaration, eg. `class` for a class declaration."
+      ),
       Child(name: "inheritanceClause", kind: .node(kind: .inheritanceClause), isOptional: true),
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation:
+          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
       Child(name: "memberBlock", kind: .node(kind: .memberBlock)),
@@ -62,7 +71,11 @@ public let TRAITS: [Trait] = [
     children: [
       Child(name: "unexpectedBeforeAsyncSpecifier", kind: .node(kind: .unexpectedNodes), isOptional: true),
       Child(name: "asyncSpecifier", kind: .token(choices: [.keyword(.async), .keyword(.reasync)]), isOptional: true),
-      Child(name: "unexpectedBetweenAsyncSpecifierAndThrowsClause", kind: .node(kind: .unexpectedNodes), isOptional: true),
+      Child(
+        name: "unexpectedBetweenAsyncSpecifierAndThrowsClause",
+        kind: .node(kind: .unexpectedNodes),
+        isOptional: true
+      ),
       Child(name: "throwsClause", kind: .node(kind: .throwsClause), isOptional: true),
       Child(name: "unexpectedAfterThrowsClause", kind: .node(kind: .unexpectedNodes), isOptional: true),
     ]
@@ -140,7 +153,8 @@ public let TRAITS: [Trait] = [
       Child(
         name: "genericWhereClause",
         kind: .node(kind: .genericWhereClause),
-        documentation: "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
+        documentation:
+          "A `where` clause that places additional constraints on generic parameters like `where Element: Hashable`.",
         isOptional: true
       ),
     ]

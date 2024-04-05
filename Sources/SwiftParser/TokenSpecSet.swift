@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+@_spi(RawSyntax) @_spi(ExperimentalLanguageFeatures) public import SwiftSyntax
+#else
 @_spi(RawSyntax) @_spi(ExperimentalLanguageFeatures) import SwiftSyntax
+#endif
 
 /// A set of `TokenSpecs`. We expect to consume one of the sets specs in the
 /// parser.
@@ -419,7 +423,8 @@ enum DeclarationModifier: TokenSpecSet {
     case TokenSpec(.unowned): self = .unowned
     case TokenSpec(.weak): self = .weak
     case TokenSpec(._resultDependsOn) where experimentalFeatures.contains(.nonescapableTypes): self = ._resultDependsOn
-    case TokenSpec(._resultDependsOnSelf) where experimentalFeatures.contains(.nonescapableTypes): self = ._resultDependsOnSelf
+    case TokenSpec(._resultDependsOnSelf) where experimentalFeatures.contains(.nonescapableTypes):
+      self = ._resultDependsOnSelf
     default: return nil
     }
   }
@@ -486,7 +491,8 @@ enum DeclarationStart: TokenSpecSet {
   }
 
   static var allCases: [DeclarationStart] {
-    return DeclarationModifier.allCases.map(Self.declarationModifier) + DeclarationKeyword.allCases.map(Self.declarationKeyword)
+    return DeclarationModifier.allCases.map(Self.declarationModifier)
+      + DeclarationKeyword.allCases.map(Self.declarationKeyword)
   }
 
   var spec: TokenSpec {
@@ -596,7 +602,8 @@ enum OperatorLike: TokenSpecSet {
   }
 
   static var allCases: [OperatorLike] {
-    [.prefixOperator] + BinaryOperatorLike.allCases.map(Self.binaryOperatorLike) + PostfixOperatorLike.allCases.map(Self.postfixOperatorLike)
+    [.prefixOperator] + BinaryOperatorLike.allCases.map(Self.binaryOperatorLike)
+      + PostfixOperatorLike.allCases.map(Self.postfixOperatorLike)
   }
 
   var spec: TokenSpec {
@@ -683,52 +690,6 @@ enum TypeAttribute: TokenSpecSet {
     case .Sendable: return .keyword(.Sendable)
     case .unchecked: return .keyword(.unchecked)
     case .isolated: return .keyword(.isolated)
-    }
-  }
-}
-
-@_spi(Diagnostics)
-public enum TypeSpecifier: TokenSpecSet {
-  case `inout`
-  case owned
-  case shared
-  case borrowing
-  case consuming
-  case transferring
-
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-    switch PrepareForKeywordMatch(lexeme) {
-    case TokenSpec(.inout): self = .inout
-    case TokenSpec(.__owned): self = .owned
-    case TokenSpec(.__shared): self = .shared
-    case TokenSpec(.consuming): self = .consuming
-    case TokenSpec(.borrowing): self = .borrowing
-    case TokenSpec(.transferring): self = .transferring
-    default: return nil
-    }
-  }
-
-  @_spi(Diagnostics)
-  public init?(token: TokenSyntax) {
-    switch token {
-    case TokenSpec(.inout): self = .inout
-    case TokenSpec(.__owned): self = .owned
-    case TokenSpec(.__shared): self = .shared
-    case TokenSpec(.consuming): self = .shared
-    case TokenSpec(.borrowing): self = .shared
-    case TokenSpec(.transferring): self = .transferring
-    default: return nil
-    }
-  }
-
-  var spec: TokenSpec {
-    switch self {
-    case .inout: return .keyword(.inout)
-    case .owned: return .keyword(.__owned)
-    case .shared: return .keyword(.__shared)
-    case .borrowing: return .keyword(.borrowing)
-    case .consuming: return .keyword(.consuming)
-    case .transferring: return .keyword(.transferring)
     }
   }
 }

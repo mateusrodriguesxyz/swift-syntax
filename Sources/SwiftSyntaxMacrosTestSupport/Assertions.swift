@@ -10,18 +10,27 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6.0)
+import SwiftBasicFormat
+public import SwiftDiagnostics
+@_spi(FixItApplier) import SwiftIDEUtils
+import SwiftParser
+import SwiftParserDiagnostics
+public import SwiftSyntax
+public import SwiftSyntaxMacroExpansion
+public import SwiftSyntaxMacros
+import _SwiftSyntaxTestSupport
+private import XCTest
+#else
 import SwiftBasicFormat
 import SwiftDiagnostics
+@_spi(FixItApplier) import SwiftIDEUtils
 import SwiftParser
 import SwiftParserDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacroExpansion
 import SwiftSyntaxMacros
 import _SwiftSyntaxTestSupport
-
-#if swift(>=5.11)
-private import XCTest
-#else
 import XCTest
 #endif
 
@@ -70,10 +79,28 @@ func assertNote(
   in expansionContext: BasicMacroExpansionContext,
   expected spec: NoteSpec
 ) {
-  assertStringsEqualWithDiff(note.message, spec.message, "message of note does not match", file: spec.originatorFile, line: spec.originatorLine)
+  assertStringsEqualWithDiff(
+    note.message,
+    spec.message,
+    "message of note does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
   let location = expansionContext.location(for: note.position, anchoredAt: note.node, fileName: "")
-  XCTAssertEqual(location.line, spec.line, "line of note does not match", file: spec.originatorFile, line: spec.originatorLine)
-  XCTAssertEqual(location.column, spec.column, "column of note does not match", file: spec.originatorFile, line: spec.originatorLine)
+  XCTAssertEqual(
+    location.line,
+    spec.line,
+    "line of note does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
+  XCTAssertEqual(
+    location.column,
+    spec.column,
+    "column of note does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
 }
 
 // MARK: - Fix-It
@@ -98,7 +125,7 @@ public struct FixItSpec {
   ///   - originatorLine: The line at which this ``NoteSpec`` was created, so that assertion failures can be reported at its location.
   public init(
     message: String,
-    originatorFile: StaticString = #file,
+    originatorFile: StaticString = #filePath,
     originatorLine: UInt = #line
   ) {
     self.message = message
@@ -111,7 +138,13 @@ func assertFixIt(
   _ fixIt: FixIt,
   expected spec: FixItSpec
 ) {
-  assertStringsEqualWithDiff(fixIt.message.message, spec.message, "message of Fix-It does not match", file: spec.originatorFile, line: spec.originatorLine)
+  assertStringsEqualWithDiff(
+    fixIt.message.message,
+    spec.message,
+    "message of Fix-It does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
 }
 
 // MARK: - Diagnostic
@@ -168,7 +201,7 @@ public struct DiagnosticSpec {
     highlights: [String]? = nil,
     notes: [NoteSpec] = [],
     fixIts: [FixItSpec] = [],
-    originatorFile: StaticString = #file,
+    originatorFile: StaticString = #filePath,
     originatorLine: UInt = #line
   ) {
     self.id = id
@@ -193,8 +226,9 @@ extension DiagnosticSpec {
     return highlights.joined(separator: " ")
   }
 
-  @_disfavoredOverload
+  // swift-format-ignore
   @available(*, deprecated, message: "Use init(id:message:line:column:severity:highlights:notes:fixIts:originatorFile:originatorLine:) instead")
+  @_disfavoredOverload
   public init(
     id: MessageID? = nil,
     message: String,
@@ -204,7 +238,7 @@ extension DiagnosticSpec {
     highlight: String? = nil,
     notes: [NoteSpec] = [],
     fixIts: [FixItSpec] = [],
-    originatorFile: StaticString = #file,
+    originatorFile: StaticString = #filePath,
     originatorLine: UInt = #line
   ) {
     self.init(
@@ -226,14 +260,38 @@ func assertDiagnostic(
   expected spec: DiagnosticSpec
 ) {
   if let id = spec.id {
-    XCTAssertEqual(diag.diagnosticID, id, "diagnostic ID does not match", file: spec.originatorFile, line: spec.originatorLine)
+    XCTAssertEqual(
+      diag.diagnosticID,
+      id,
+      "diagnostic ID does not match",
+      file: spec.originatorFile,
+      line: spec.originatorLine
+    )
   }
-  assertStringsEqualWithDiff(diag.message, spec.message, "message does not match", file: spec.originatorFile, line: spec.originatorLine)
+  assertStringsEqualWithDiff(
+    diag.message,
+    spec.message,
+    "message does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
   let location = expansionContext.location(for: diag.position, anchoredAt: diag.node, fileName: "")
   XCTAssertEqual(location.line, spec.line, "line does not match", file: spec.originatorFile, line: spec.originatorLine)
-  XCTAssertEqual(location.column, spec.column, "column does not match", file: spec.originatorFile, line: spec.originatorLine)
+  XCTAssertEqual(
+    location.column,
+    spec.column,
+    "column does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
 
-  XCTAssertEqual(spec.severity, diag.diagMessage.severity, "severity does not match", file: spec.originatorFile, line: spec.originatorLine)
+  XCTAssertEqual(
+    spec.severity,
+    diag.diagMessage.severity,
+    "severity does not match",
+    file: spec.originatorFile,
+    line: spec.originatorLine
+  )
 
   if let highlights = spec.highlights {
     if diag.highlights.count != highlights.count {
@@ -315,7 +373,7 @@ public func assertMacroExpansion(
   testModuleName: String = "TestModule",
   testFileName: String = "test.swift",
   indentationWidth: Trivia = .spaces(4),
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   let specs = macros.mapValues { MacroSpec(type: $0) }
@@ -360,7 +418,7 @@ public func assertMacroExpansion(
   testModuleName: String = "TestModule",
   testFileName: String = "test.swift",
   indentationWidth: Trivia = .spaces(4),
-  file: StaticString = #file,
+  file: StaticString = #filePath,
   line: UInt = #line
 ) {
   // Parse the original source file.
@@ -375,7 +433,11 @@ public func assertMacroExpansion(
     return BasicMacroExpansionContext(sharingWith: context, lexicalContext: syntax.allMacroLexicalContexts())
   }
 
-  let expandedSourceFile = origSourceFile.expand(macroSpecs: macroSpecs, contextGenerator: contextGenerator, indentationWidth: indentationWidth)
+  let expandedSourceFile = origSourceFile.expand(
+    macroSpecs: macroSpecs,
+    contextGenerator: contextGenerator,
+    indentationWidth: indentationWidth
+  )
   let diags = ParseDiagnosticsGenerator.diagnostics(for: expandedSourceFile)
   if !diags.isEmpty {
     XCTFail(

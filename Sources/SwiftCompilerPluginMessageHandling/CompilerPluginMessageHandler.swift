@@ -10,7 +10,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if swift(>=6)
+public import SwiftSyntaxMacros
+#else
 import SwiftSyntaxMacros
+#endif
 
 /// Optional features.
 public enum PluginFeature: String {
@@ -168,7 +172,7 @@ extension CompilerPluginMessageHandler {
           )
         )
       }
-      try self.sendMessage(.loadPluginLibraryResult(loaded: diags.isEmpty, diagnostics: diags));
+      try self.sendMessage(.loadPluginLibraryResult(loaded: diags.isEmpty, diagnostics: diags))
     }
   }
 }
