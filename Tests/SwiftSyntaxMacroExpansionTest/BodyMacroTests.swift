@@ -25,6 +25,8 @@ import SwiftSyntax
 import SwiftSyntaxMacrosTestSupport
 import XCTest
 
+
+
 struct RemoteBodyMacro: BodyMacro {
   static func expansion(
     of node: AttributeSyntax,
@@ -61,6 +63,31 @@ struct RemoteBodyMacro: BodyMacro {
       """
     ]
   }
+}
+
+struct SourceLocationMacro: BodyMacro {
+    
+    static var formatMode: FormatMode { .disabled }
+    
+    static func expansion(of node: AttributeSyntax, providingBodyFor declaration: some DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, in context: some MacroExpansionContext) throws -> [CodeBlockItemSyntax] {
+                
+        if let statements = declaration.body?.statements {
+            var body: [CodeBlockItemSyntax] = []
+            statements.forEach { statement in
+                let transformed = CodeBlockItemListSyntax {
+                    "#sourceLocation(file: \"...\", line: 0)"
+                    statement
+                    "\n#sourceLocation()"
+                }
+                body.append(contentsOf: transformed)
+            }
+            return body
+        } else {
+            return []
+        }
+        
+    }
+    
 }
 
 final class BodyMacroTests: XCTestCase {
@@ -125,4 +152,24 @@ final class BodyMacroTests: XCTestCase {
       indentationWidth: indentationWidth
     )
   }
+    
+    func testBodyExpansionFormatModeDisabled() {
+      assertMacroExpansion(
+        """
+        @SourceLocationMacro
+        func f() {
+                let x: Int = 1
+        }
+        """,
+        expandedSource: """
+          func f() {
+          #sourceLocation(file: "...", line: 0)
+                  let x: Int = 1
+          #sourceLocation()
+          }
+          """,
+        macros: ["SourceLocationMacro": SourceLocationMacro.self],
+        indentationWidth: indentationWidth
+      )
+    }
 }

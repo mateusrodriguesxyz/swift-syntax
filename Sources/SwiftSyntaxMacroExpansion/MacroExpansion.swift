@@ -344,9 +344,11 @@ public func expandAttachedMacroWithoutCollapsing<Context: MacroExpansionContext>
         providingBodyFor: declToPass,
         in: context
       )
-      return body.map {
-        $0.formattedExpansion(definition.formatMode, indentationWidth: indentationWidth)
-      }
+      let formatted = body.map {
+          $0.formattedExpansion(definition.formatMode, indentationWidth: indentationWidth)
+        }
+            
+      return formatted
 
     default:
       throw MacroExpansionError.unmatchedMacroRole(definition, macroRole)
@@ -394,9 +396,12 @@ public func expandAttachedMacro<Context: MacroExpansionContext>(
     in: context,
     indentationWidth: indentationWidth
   )
-  return expandedSources.map {
-    collapse(expansions: $0, for: macroRole, attachedTo: declarationNode, indentationWidth: indentationWidth)
-  }
+    
+  let collapsed = expandedSources.map {
+      collapse(definition: definition, expansions: $0, for: macroRole, attachedTo: declarationNode, indentationWidth: definition.formatMode == .auto ? indentationWidth : nil)
+    }
+    
+  return collapsed
 }
 
 fileprivate extension SyntaxProtocol {
@@ -407,14 +412,15 @@ fileprivate extension SyntaxProtocol {
     switch mode {
     case .auto:
       formatted = self.formatted(using: BasicFormat(indentationWidth: indentationWidth))
+      return formatted.trimmedDescription(matching: { $0.isWhitespace })
     case .disabled:
       formatted = Syntax(self)
+            return formatted.description
     #if RESILIENT_LIBRARIES
     @unknown default:
       fatalError()
     #endif
     }
-    return formatted.trimmedDescription(matching: { $0.isWhitespace })
   }
 }
 
@@ -458,6 +464,7 @@ fileprivate extension DeclSyntax {
 
 /// Join `expansions`
 public func collapse<Node: SyntaxProtocol>(
+  definition: Macro.Type? = nil,
   expansions: [String],
   for role: MacroRole,
   attachedTo declarationNode: Node,
@@ -472,13 +479,15 @@ public func collapse<Node: SyntaxProtocol>(
 
   // Wrap the expansions in a set of braces.
   func wrapInBraces() {
-    // Default to 4 spaces if no indentation was passed.
+
+      // Default to 4 spaces if no indentation was passed.
     // In the future, we could consider inferring the indentation width from
     // the expansions to collapse.
-    expansions = expansions.map({ $0.indented(by: indentationWidth ?? .spaces(4)) })
+    let indentation: Trivia = definition?.formatMode == .auto ? indentationWidth ?? .spaces(4) : .spaces(0)
+    expansions = expansions.map({ $0.indented(by: indentation) })
     expansions[0] = "{\n" + expansions[0]
     expansions[expansions.count - 1] += "\n}"
-    separator = "\n"
+    separator = definition?.formatMode == .auto ? "\n" : ""
   }
 
   switch role {
