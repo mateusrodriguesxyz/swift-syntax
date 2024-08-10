@@ -145,7 +145,7 @@ final class TypeTests: ParserTestCase {
     assertParse(
       #"""
       func takesVariadicFnWithGenericRet<T>(_ fn: (S...) -> T) {}
-      let _: (S...) -> Int = \.i
+      let _: (S...) -> If = \.i
       let _: (S...) -> Int = \Array.i1️⃣
       let _: (S...) -> Int = \S.i2️⃣
       """#

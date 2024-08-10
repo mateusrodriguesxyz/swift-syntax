@@ -248,9 +248,27 @@ public struct RawSyntaxTokenView: Sendable {
   public func formKind() -> TokenKind {
     switch raw.rawData.payload {
     case .parsedToken(let dat):
-      return TokenKind.fromRaw(kind: dat.tokenKind, text: String(syntaxText: dat.tokenText))
+      //      return TokenKind.fromRaw(kind: dat.tokenKind, text: String(syntaxText: dat.tokenText))
+      if case let .misspelledKeyword(text) = dat.tokenDiagnostic?.kind {
+        return TokenKind.fromRaw(kind: dat.tokenKind, text: String(syntaxText: text.defaultText))
+      } else {
+        var kind = dat.tokenKind
+        if kind == .keyword, Keyword(dat.tokenText) == nil {
+          kind = .identifier
+        }
+        return TokenKind.fromRaw(kind: kind, text: String(syntaxText: dat.tokenText))
+      }
     case .materializedToken(let dat):
-      return TokenKind.fromRaw(kind: dat.tokenKind, text: String(syntaxText: dat.tokenText))
+      if case let .misspelledKeyword(text) = dat.tokenDiagnostic?.kind {
+        return TokenKind.fromRaw(kind: dat.tokenKind, text: String(syntaxText: text.defaultText))
+      } else {
+        var kind = dat.tokenKind
+        if kind == .keyword, Keyword(dat.tokenText) == nil {
+          kind = .identifier
+        }
+        return TokenKind.fromRaw(kind: kind, text: String(syntaxText: dat.tokenText))
+      }
+    //      return TokenKind.fromRaw(kind: dat.tokenKind, text: String(syntaxText: dat.tokenText))
     case .layout(_):
       preconditionFailure("'formKind' is not available for non-token node")
     }

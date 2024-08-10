@@ -35,8 +35,8 @@ extension AccessorDeclSyntax {
     case _modify
     case `init`
     
-    init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-      switch PrepareForKeywordMatch(lexeme) {
+    init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+      switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled([.didSet, .willSet])) {
       case TokenSpec(.get):
         self = .get
       case TokenSpec(.set):
@@ -3397,7 +3397,7 @@ extension SimpleStringLiteralExprSyntax {
 
 extension SimpleTypeSpecifierSyntax {
   @_spi(Diagnostics)
-  public enum SpecifierOptions: TokenSpecSet {
+  public enum SpecifierOptions: SyntaxText, TokenSpecSet {
     case `inout`
     case __shared
     case __owned

@@ -20,7 +20,7 @@ public struct TokenDiagnostic: Hashable, Sendable {
   }
 
   /// Each diagnostic kind is uniquely represented by a value in this enum.
-  public enum Kind: Sendable {
+  public enum Kind: Hashable, Sendable {
     // Please order these alphabetically
 
     case editorPlaceholder
@@ -46,6 +46,7 @@ public struct TokenDiagnostic: Hashable, Sendable {
     case invalidNumberOfHexDigitsInUnicodeEscape
     case invalidOctalDigitInIntegerLiteral
     case invalidUtf8
+    case misspelledKeyword(Keyword)
     case multilineRegexClosingNotOnNewline
     case nonBreakingSpace
     case nulCharacter
@@ -85,6 +86,7 @@ public struct TokenDiagnostic: Hashable, Sendable {
       case .invalidNumberOfHexDigitsInUnicodeEscape: return .error
       case .invalidOctalDigitInIntegerLiteral: return .error
       case .invalidUtf8: return .error
+      case .misspelledKeyword: return .error
       case .multilineRegexClosingNotOnNewline: return .error
       case .nonBreakingSpace: return .warning
       case .nulCharacter: return .warning

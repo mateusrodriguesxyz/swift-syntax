@@ -234,6 +234,7 @@ public extension SwiftSyntax.TokenDiagnostic {
     case .unicodeCurlyQuote: return StaticTokenError.unicodeCurlyQuote
     case .unprintableAsciiCharacter: return StaticTokenError.unprintableAsciiCharacter
     case .unterminatedBlockComment: return StaticTokenError.unterminatedBlockComment
+    case .misspelledKeyword: return MisspelledKeyword(tokenKind: token.tokenKind)
     #if RESILIENT_LIBRARIES
     @unknown default:
       fatalError()
@@ -243,6 +244,8 @@ public extension SwiftSyntax.TokenDiagnostic {
 
   func position(in token: TokenSyntax) -> AbsolutePosition {
     switch kind {
+    case .misspelledKeyword:
+      return token.positionAfterSkippingLeadingTrivia
     case .extraneousLeadingWhitespaceError, .extraneousLeadingWhitespaceWarning:
       if let previousToken = token.previousToken(viewMode: .all) {
         return previousToken.endPositionBeforeTrailingTrivia
@@ -325,6 +328,28 @@ public extension SwiftSyntax.TokenDiagnostic {
         changes.append(.replaceLeadingTrivia(token: nextToken, newTrivia: []))
       }
       return [FixIt(message: .removeExtraneousWhitespace, changes: changes)]
+    case .misspelledKeyword:
+      var changes: [FixIt.Change] = []
+      let oldNode = Syntax(token)
+      let newNode = Syntax(
+        TokenSyntax(
+          token.tokenKind,
+          leadingTrivia: oldNode.leadingTrivia,
+          trailingTrivia: oldNode.trailingTrivia,
+          presence: .present
+        )
+      )
+      changes.append(.replace(oldNode: oldNode, newNode: newNode))
+      let misspelling = String(
+        token.description
+          .dropFirst(token.leadingTriviaLength.utf8Length)
+          .dropLast(token.trailingTriviaLength.utf8Length)
+      )
+      let message = ReplaceMisspelledKeywordFixIt(
+        misspelling: misspelling,
+        keyword: token.text
+      )
+      return [FixIt(message: message, changes: changes)]
     default:
       return []
     }

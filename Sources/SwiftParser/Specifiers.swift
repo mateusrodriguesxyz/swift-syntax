@@ -61,10 +61,10 @@ public enum ThrowsEffectSpecifier: TokenSpecSet {
   case `throws`
   case `try`
 
-  init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
+  init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
     // We'll take 'throw' and 'try' too for recovery but they have to
     // be on the same line as the declaration they're modifying.
-    switch PrepareForKeywordMatch(lexeme) {
+    switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled([.throws])) {
     case TokenSpec(.rethrows): self = .rethrows
     case TokenSpec(.throw, allowAtStartOfLine: false): self = .throw
     case TokenSpec(.throws): self = .throws
@@ -246,8 +246,8 @@ extension RawFunctionEffectSpecifiersSyntax: RawEffectSpecifiersTrait {
     case async
     case reasync
 
-    init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-      switch PrepareForKeywordMatch(lexeme) {
+    init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+      switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled([.async])) {
       case TokenSpec(.async): self = .async
       case TokenSpec(.reasync): self = .reasync
       default: return nil
@@ -286,8 +286,8 @@ extension RawFunctionEffectSpecifiersSyntax: RawEffectSpecifiersTrait {
     case `rethrows`
     case `throws`
 
-    init?(lexeme: Lexer.Lexeme, experimentalFeatures: Parser.ExperimentalFeatures) {
-      switch PrepareForKeywordMatch(lexeme) {
+    init?(lexeme: Lexer.Lexeme, next: Lexer.Lexeme?, experimentalFeatures: Parser.ExperimentalFeatures) {
+      switch PrepareForKeywordMatch(lexeme, next: next, match: .misspelled([.throws])) {
       case TokenSpec(.rethrows): self = .rethrows
       case TokenSpec(.throws): self = .throws
       default: return nil
